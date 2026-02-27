@@ -56,11 +56,8 @@ db.firm.aggregate([
         {
           $project: {
             _id: 1,
-            Role: { $literal: 'UltimateResponsibilitySqm' },
+            Role: { $literal: 'UltimateResponsibilitySqmTitle' },
             Title: '$ultimateResponsibilityDoc.name',
-
-            // If assignments exist, map their emails and join with '; ', else null
-           
             AssignmentName: {
               $cond: [
                 { $gt: [{ $size: { $ifNull: ['$ultimateTitleAssignments.assignments', []] } }, 0] },
@@ -88,8 +85,6 @@ db.firm.aggregate([
                 null
               ]
             },
-
-            // If you want Assignment just as emails concatenated:
             Assignment: {
               $cond: [
                 { $gt: [{ $size: { $ifNull: ['$ultimateTitleAssignments.assignments', []] } }, 0] },
@@ -115,8 +110,8 @@ db.firm.aggregate([
                 null
               ]
             },
-            "FiscalYear": {$concat:['FY',{$substr:['$fiscalYear',2,2]}]},
-            memberFirmId: '$memberFirmId',
+            FY: {$concat:['FY',{$substr:['$fiscalYear',2,2]}]},
+            MemberFirmId: '$memberFirmId',
             _id:0
           }
         }
@@ -171,7 +166,7 @@ db.firm.aggregate([
         { $unwind: { path: '$operationalTitleAssignments', preserveNullAndEmptyArrays: true } },
         {
           $project: {
-            Role: { $literal: 'OperationalResponsibilitySqm' },
+            Role: { $literal: 'OperationalResponsibilitySqmTitle' },
             Title: '$operationalResponsibilitySqmDoc.name',
            
             AssignmentName: {
@@ -226,8 +221,8 @@ db.firm.aggregate([
                 null
               ]
             },
-            "FiscalYear": {$concat:['FY',{$substr:['$fiscalYear',2,2]}]},
-            memberFirmId: '$memberFirmId',
+            FY: {$concat:['FY',{$substr:['$fiscalYear',2,2]}]},
+            MemberFirmId: '$memberFirmId',
             _id:0
           }
         }
@@ -273,16 +268,68 @@ db.firm.aggregate([
           }
         },
         { $unwind: { path: '$orIndependenceTitleAssignments', preserveNullAndEmptyArrays: true } },
-        { $unwind: { path: '$orIndependenceTitleAssignments.assignments', preserveNullAndEmptyArrays: true } },
+        // { $unwind: { path: '$orIndependenceTitleAssignments.assignments', preserveNullAndEmptyArrays: true } },
         {
           $project: {
-            Role: { $literal: 'OperationalResponsibilityComplianceWithRequirement' },
+            Role: { $literal: 'OperationalResponsibilityComplianceWithRequirementTitle' },
             Title: '$orIndependenceRequirementDoc.name',
-            Assignment: '$orIndependenceTitleAssignments.assignments.email',
-            AssignmentName: '$orIndependenceTitleAssignments.assignments.displayName',
-            // fiscalYear: '$fiscalYear',
-            "FiscalYear": {$concat:['FY',{$substr:['$fiscalYear',2,2]}]},
-            memberFirmId: '$memberFirmId',
+            // Assignment: '$orIndependenceTitleAssignments.assignments.email',
+            // AssignmentName: '$orIndependenceTitleAssignments.assignments.displayName',
+            
+            Assignment: {
+              $cond: [
+                { $gt: [{ $size: { $ifNull: ['$orIndependenceTitleAssignments.assignments', []] } }, 0] },
+                {
+                  $reduce: {
+                    input: {
+                      $map: {
+                        input: '$orIndependenceTitleAssignments.assignments',
+                        as: 'a',
+                        in: '$$a.email'
+                      }
+                    },
+                    initialValue: '',
+                    in: {
+                      $cond: [
+                        { $eq: ['$$value', ''] },
+                        '$$this',
+                        { $concat: ['$$value', '; ', '$$this'] }
+                      ]
+                    }
+                  }
+                },
+                null
+              ]
+            },
+            AssignmentName: {
+              $cond: [
+                { $gt: [{ $size: { $ifNull: ['$orIndependenceTitleAssignments.assignments', []] } }, 0] },
+                {
+                  $reduce: {
+                    input: {
+                      $map: {
+                        input: '$orIndependenceTitleAssignments.assignments',
+                        as: 'a',
+                        in: {
+                          $concat: ['$$a.displayName', ': ', '$$a.email']
+                        }
+                      }
+                    },
+                    initialValue: '',
+                    in: {
+                      $cond: [
+                        { $eq: ['$$value', ''] },
+                        '$$this',
+                        { $concat: ['$$value', '; ', '$$this'] }
+                      ]
+                    }
+                  }
+                },
+                null
+              ]
+            },
+            FY: {$concat:['FY',{$substr:['$fiscalYear',2,2]}]},
+            MemberFirmId: '$memberFirmId',
             _id:0
           }
         }
@@ -328,16 +375,67 @@ db.firm.aggregate([
           }
         },
         { $unwind: { path: '$orMonitoringRemediationTitleAssignments', preserveNullAndEmptyArrays: true } },
-        { $unwind: { path: '$orMonitoringRemediationTitleAssignments.assignments', preserveNullAndEmptyArrays: true } },
+        // { $unwind: { path: '$orMonitoringRemediationTitleAssignments.assignments', preserveNullAndEmptyArrays: true } },
         {
           $project: {
-            Role: { $literal: 'OperationalResponsibilityMonitoringAndRemediation' },
+            Role: { $literal: 'OperationalResponsibilityMonitoringAndRemediationTitle' },
             Title: '$orMonitoringRemediationDoc.name',
-            Assignment: '$orMonitoringRemediationTitleAssignments.assignments.email',
-            AssignmentName: '$orMonitoringRemediationTitleAssignments.assignments.displayName',
-            // fiscalYear: '$fiscalYear',
-            "FiscalYear": {$concat:['FY',{$substr:['$fiscalYear',2,2]}]},
-            memberFirmId: '$memberFirmId',
+            // Assignment: '$orMonitoringRemediationTitleAssignments.assignments.email',
+            // AssignmentName: '$orMonitoringRemediationTitleAssignments.assignments.displayName',
+             AssignmentName: {
+              $cond: [
+                { $gt: [{ $size: { $ifNull: ['$orMonitoringRemediationTitleAssignments.assignments', []] } }, 0] },
+                {
+                  $reduce: {
+                    input: {
+                      $map: {
+                        input: '$orMonitoringRemediationTitleAssignments.assignments',
+                        as: 'a',
+                        in: {
+                          $concat: ['$$a.displayName', ': ', '$$a.email']
+                        }
+                      }
+                    },
+                    initialValue: '',
+                    in: {
+                      $cond: [
+                        { $eq: ['$$value', ''] },
+                        '$$this',
+                        { $concat: ['$$value', '; ', '$$this'] }
+                      ]
+                    }
+                  }
+                },
+                null
+              ]
+            },
+            Assignment: {
+              $cond: [
+                { $gt: [{ $size: { $ifNull: ['$orMonitoringRemediationTitleAssignments.assignments', []] } }, 0] },
+                {
+                  $reduce: {
+                    input: {
+                      $map: {
+                        input: '$orMonitoringRemediationTitleAssignments.assignments',
+                        as: 'a',
+                        in: '$$a.email'
+                      }
+                    },
+                    initialValue: '',
+                    in: {
+                      $cond: [
+                        { $eq: ['$$value', ''] },
+                        '$$this',
+                        { $concat: ['$$value', '; ', '$$this'] }
+                      ]
+                    }
+                  }
+                },
+                null
+              ]
+            },
+            FY: {$concat:['FY',{$substr:['$fiscalYear',2,2]}]},
+            MemberFirmId: '$memberFirmId',
             _id:0
           }
         }
@@ -359,5 +457,5 @@ db.firm.aggregate([
 
   { $unwind: "$combined" },
   { $replaceRoot: { newRoot: "$combined" } },
-  {$out: "isqmRoles"}
+  {$out: "archerentitiestitles"}
 ]);

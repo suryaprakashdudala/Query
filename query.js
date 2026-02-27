@@ -98,7 +98,8 @@ try{
                 $match:{
                     $expr:{
                         $and:[{
-                            $eq:['$$ultimateResponsibility','$_id']
+                            // $eq:['$$ultimateResponsibility','$_id']
+                            $in: [{$toString:'$_id'}, { $ifNull: ['$$ultimateResponsibility', []] }]
                         },{
                             $eq:["$fiscalYear", '$$titleFiscalYear']
                         }]
@@ -135,11 +136,6 @@ try{
             as:'ultimateResponsibility'
         }
     },{
-        $unwind:{
-            path:'$ultimateResponsibility',
-            preserveNullAndEmptyArrays:true
-        }
-    },{
         $lookup:{
             from:'title',
             let:{
@@ -154,7 +150,8 @@ try{
                     // }
                     $expr:{
                         $and:[{
-                            $eq:['$$operationalResponsibilitySqm','$_id']
+                            // $eq:['$$operationalResponsibilitySqm','$_id']
+                            $in: [{$toString:'$_id'}, { $ifNull: ['$$operationalResponsibilitySqm', []] }]
                         },{
                             $eq:["$fiscalYear", "$$titleFiscalYear"]
                         }]
@@ -189,11 +186,6 @@ try{
                 }
             }],
             as:'operationalResponsibilitySqm'
-        }
-    },{
-        $unwind:{
-            path:'$operationalResponsibilitySqm',
-            preserveNullAndEmptyArrays:true
         }
     },{
         $lookup:{
@@ -1349,59 +1341,97 @@ try{
                     else:''
                 }
             },
-            "UltimateResponsibilitySqmTitle":{$cond:{if:'$ultimateResponsibility.name',then:'$ultimateResponsibility.name',else:''}},
-            "UltimateResponsibilitySqmAssignments":{
-                $cond:{
-                    if:'$ultimateResponsibility',
-                    then:{
-                        $let:{
-                            vars:{
-                                assignments:{$cond:{if:{$isArray:'$ultimateResponsibility.titleAssignments.assignments'},then:'$ultimateResponsibility.titleAssignments.assignments',else:[]}}
-                            },
-                            in:{
-                                $cond:{
-                                    if:{$gt:[{$size:'$$assignments'},0]},
-                                    then:{
-                                        $reduce:{
-                                            input:'$$assignments',
-                                            initialValue:'',
-                                            in:{$concat:['$$value',{$cond:{if:{$ne:['','$$value']},then:'; ',else:' '}},'$$this.email']}
-                                        }
-                                    },
-                                    else:'no assignment'
-                                }
-                            }
-                        }
-                    },
-                    else:''
+            "UltimateResponsibilitySqmTitle": {
+                $reduce: {
+                    // input: {ifNull: ['$ultimateResponsibility', []]},
+                    input: {$cond: {if: {$isArray: '$ultimateResponsibility'}, then: '$ultimateResponsibility', else: []}},
+                    initialValue:"",
+                    in: {
+                        $concat: ["$$value", {$cond: {if: {$eq: ['$$value', '']}, then: '', else: '; '}}, '$$this.name']
+                    }
                 }
             },
-            "OperationalResponsibilitySqmTitle":{$cond:{if:'$operationalResponsibilitySqm.name',then:'$operationalResponsibilitySqm.name',else:''}},
-            "OperationalResponsibilitySqmAssignments":{
-                $cond:{
-                    if:'$operationalResponsibilitySqm',
-                    then:{
-                        $let:{
-                            vars:{
-                                name:{$cond:{if:'$operationalResponsibilitySqm.name',then:'$operationalResponsibilitySqm.name',else:''}},
-                                assignments:{$cond:{if:{$isArray:'$operationalResponsibilitySqm.titleAssignments.assignments'},then:'$operationalResponsibilitySqm.titleAssignments.assignments',else:[]}}
-                            },
-                            in:{
-                                $cond:{
-                                    if:{$gt:[{$size:'$$assignments'},0]},
-                                    then:{
-                                        $reduce:{
-                                            input:'$$assignments',
-                                            initialValue:'',
-                                            in:{$concat:['$$value',{$cond:{if:{$ne:['','$$value']},then:'; ',else:''}},'$$this.email']}
-                                        }
-                                    },
-                                    else:'no assignment'
+            "UltimateResponsibilitySqmAssignments": {
+                $let: {
+                    vars: {
+                        allAssignments: {
+                            $reduce: {
+                                input: {$cond: {if: {$isArray: '$ultimateResponsibility'}, then: '$ultimateResponsibility', else: []}},
+                                initialValue: [],
+                                in: {
+                                    $concatArrays: [
+                                        '$$value',
+                                        {$cond: {if: {$isArray: '$$this.titleAssignments.assignments'}, then: '$$this.titleAssignments.assignments', else: []}}
+                                    ]
                                 }
                             }
                         }
                     },
-                    else:''
+                    in:{
+                        $cond: {
+                            if: {$gt: [{$size: '$$allAssignments'}, 0]},
+                            then: {
+                                $reduce: {
+                                    input: '$$allAssignments',
+                                    initialValue: '',
+                                    in: {
+                                        $concat: [
+                                            '$$value',
+                                            {$cond: {if: {$ne: ['$$value', '']}, then: '; ', else: ''}},
+                                            '$$this.email'
+                                        ]
+                                    }
+                                }
+                            },
+                            else: 'no assignment'
+                        }
+                    }
+                }
+            },
+            "OperationalResponsibilitySqmTitle": {
+                $reduce: {
+                    input: {$cond: {if: {$isArray: '$operationalResponsibilitySqm'}, then: '$operationalResponsibilitySqm', else: []}},
+                    initialValue:"",
+                    in: {
+                        $concat: ["$$value", {$cond: {if: {$eq: ['$$value', '']}, then: '', else: '; '}}, '$$this.name']
+                    }
+                }
+            },
+            "OperationalResponsibilitySqmAssignments": {
+                $let: {
+                    vars: {
+                        allAssignments: {
+                            $reduce: {
+                                input: {$cond: {if: {$isArray: '$operationalResponsibilitySqm'}, then: '$operationalResponsibilitySqm', else: []}},
+                                initialValue: [],
+                                in: {
+                                    $concatArrays: [
+                                        '$$value',
+                                        {$cond: {if: {$isArray: '$$this.titleAssignments.assignments'}, then: '$$this.titleAssignments.assignments', else: []}}
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    in:{
+                        $cond: {
+                            if: {$gt: [{$size: '$$allAssignments'}, 0]},
+                            then: {
+                                $reduce: {
+                                    input: '$$allAssignments',
+                                    initialValue: '',
+                                    in: {
+                                        $concat: [
+                                            '$$value',
+                                            {$cond: {if: {$ne: ['$$value', '']}, then: '; ', else: ''}},
+                                            '$$this.email'
+                                        ]
+                                    }
+                                }
+                            },
+                            else: 'no assignment'
+                        }
+                    }
                 }
             },
             "OperationalResponsibilityComplianceWithRequirementTitle":{$cond:{if:'$orIndependenceRequirement.name',then:'$orIndependenceRequirement.name',else:''}},
@@ -1459,56 +1489,83 @@ try{
                 }
             },
             "UltimateResponsibilitySqmAssignmentsName":{
-                $cond:{
-                    if:'$ultimateResponsibility',
-                    then:{
-                        $let:{
-                            vars:{
-                                assignments:{$cond:{if:{$isArray:'$ultimateResponsibility.titleAssignments.assignments'},then:'$ultimateResponsibility.titleAssignments.assignments',else:[]}}
-                            },
-                            in:{
-                                $cond:{
-                                    if:{$gt:[{$size:'$$assignments'},0]},
-                                    then:{
-                                        $reduce:{
-                                            input:'$$assignments',
-                                            initialValue:'',
-                                            in:{$concat:['$$value',{$cond:{if:{$ne:['','$$value']},then:'; ',else:''}},'$$this.displayName',': ','$$this.email']}
-                                        }
-                                    },
-                                    else:'no assignment'
+                $let: {
+                    vars: {
+                        allAssignments: {
+                            $reduce: {
+                                input: {$cond: {if: {$isArray: '$ultimateResponsibility'}, then: '$ultimateResponsibility', else: []}},
+                                initialValue: [],
+                                in: {
+                                    $concatArrays: [
+                                        '$$value', 
+                                        {$cond: {if: {$isArray: '$$this.titleAssignments.assignments'}, then: '$$this.titleAssignments.assignments', else: []}}
+                                    ]
                                 }
                             }
                         }
                     },
-                    else:''
+                    in: {
+                        $cond: {
+                            if: {$gt: [{$size: '$$allAssignments'}, 0]},
+                            then: {
+                                $reduce: {
+                                    input: '$$allAssignments',
+                                    initialValue: '',
+                                    in: {
+                                        $concat: [
+                                            '$$value',
+                                            {$cond: {if: {$ne: ['$$value', '']}, then: '; ', else: ''}},
+                                            '$$this.displayName',
+                                            ': ',
+                                            '$$this.email'
+                                        ]
+
+                                    }
+                                }
+                            },
+                            else: 'no assignment'
+                        }
+                    }
                 }
             },
             "OperationalResponsibilitySqmAssignmentsName":{
-                $cond:{
-                    if:'$operationalResponsibilitySqm',
-                    then:{
-                        $let:{
-                            vars:{
-                                name:{$cond:{if:'$operationalResponsibilitySqm.name',then:'$operationalResponsibilitySqm.name',else:''}},
-                                assignments:{$cond:{if:{$isArray:'$operationalResponsibilitySqm.titleAssignments.assignments'},then:'$operationalResponsibilitySqm.titleAssignments.assignments',else:[]}}
-                            },
-                            in:{
-                                $cond:{
-                                    if:{$gt:[{$size:'$$assignments'},0]},
-                                    then:{
-                                        $reduce:{
-                                            input:'$$assignments',
-                                            initialValue:'',
-                                            in:{$concat:['$$value',{$cond:{if:{$ne:['','$$value']},then:'; ',else:''}},'$$this.displayName',': ','$$this.email']}
-                                        }
-                                    },
-                                    else:'no assignment'
+                $let: {
+                    vars: {
+                        allAssignments: {
+                            $reduce: {
+                                input: {$cond: {if: {$isArray: '$operationalResponsibilitySqm'}, then: '$operationalResponsibilitySqm', else: []}},
+                                initialValue: [],
+                                in: {
+                                    $concatArrays: [
+                                        '$$value', 
+                                        {$cond: {if: {$isArray: '$$this.titleAssignments.assignments'}, then: '$$this.titleAssignments.assignments', else: []}}
+                                    ]
                                 }
                             }
                         }
                     },
-                    else:''
+                    in: {
+                        $cond: {
+                            if: {$gt: [{$size: '$$allAssignments'}, 0]},
+                            then: {
+                                $reduce: {
+                                    input: '$$allAssignments',
+                                    initialValue: '',
+                                    in: {
+                                        $concat: [
+                                            '$$value',
+                                            {$cond: {if: {$ne: ['$$value', '']}, then: '; ', else: ''}},
+                                            '$$this.displayName',
+                                            ': ',
+                                            '$$this.email'
+                                        ]
+
+                                    }
+                                }
+                            },
+                            else: 'no assignment'
+                        }
+                    }
                 }
             },
             "OperationalResponsibilityComplianceWithRequirementAssignmentsName":{
