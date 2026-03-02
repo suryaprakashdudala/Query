@@ -881,6 +881,14 @@ try{
         }
     },
     {
+        $addFields: {
+            ultimateResponsibility: '$ultimateResponsibility',
+            operationalResponsibilitySqm: '$operationalResponsibilitySqm',
+            orIndependenceRequirement: '$orIndependenceRequirement',
+            orMonitoringRemediation: '$orMonitoringRemediation'
+        }
+    },
+    {
         $project:{
             _id:0,
             "Type":{
@@ -2033,6 +2041,10 @@ try{
             "OperationalResponsibilitySqmTitleId": {$cond:{if:'$operationalResponsibilitySqm._id',then:'$operationalResponsibilitySqm._id',else:''}},
             "OrIndependenceRequirementTitleId": {$cond:{if:'$orIndependenceRequirement._id',then:'$orIndependenceRequirement._id',else:''}},
             "OrMonitoringRemediationTitleId": {$cond:{if:'$orMonitoringRemediation._id',then:'$orMonitoringRemediation._id',else:''}},
+            "ultimateResponsibility": "$ultimateResponsibility",
+            "operationalResponsibilitySqm": "$operationalResponsibilitySqm",
+            "orIndependenceRequirement": "$orIndependenceRequirement",
+            "orMonitoringRemediation": "$orMonitoringRemediation",
             "MemberFirmId":{$cond:{if:{$eq:['$type','EntityType_MemberFirm']},then:'$memberFirmId',else:''}},
             "ArcherPublishedOn" : new Date().toISOString(),
             "Rollforwarded":{$cond:{if:{$eq:['$isRollFwdComplete',true]},then:'Yes',else:'No'}},
@@ -2167,9 +2179,136 @@ try{
 
     db.archerentities.updateMany({LastFlagProcessedDate : {$lte:new Date(ISODate().getTime() - calc7Days).toISOString()}},{$set:{EventAction:''}});
     db.archerentitiesmaster.drop(); 
-    db.archerentities.aggregate( [   
+    db.archerentities.aggregate([
         { $merge : { into : "archerentitiesmaster" } }
-     ] )
+    ]);
+
+    // Create archerentitiestitles collection
+    db.archerentities.aggregate([
+        {
+            $match: {
+                Type: 'Member Firm',
+                EventAction: 'Update',
+                EventType: {$in: ['New', 'Updated']}
+            }
+        },
+        {
+            $facet: {
+                ultimate: [
+                    { $match: { ultimateResponsibility: { $ne: null, $ne: "" } } },
+                    {
+                        $project: {
+                            _id: 0,
+                            Role: "UltimateResponsibilitySqmTitle",
+                            Title: "$ultimateResponsibility.name",
+                            AssignmentName: {
+                                $reduce: {
+                                    input: { $map: { input: { $ifNull: ["$ultimateResponsibility.titleAssignments.assignments", []] }, as: "a", in: { $concat: ["$$a.displayName", ": ", "$$a.email"] } } },
+                                    initialValue: "",
+                                    in: { $cond: [{ $eq: ["$$value", ""] }, "$$this", { $concat: ["$$value", "; ", "$$this"] }] }
+                                }
+                            },
+                            Assignment: {
+                                $reduce: {
+                                    input: { $map: { input: { $ifNull: ["$ultimateResponsibility.titleAssignments.assignments", []] }, as: "a", in: "$$a.email" } },
+                                    initialValue: "",
+                                    in: { $cond: [{ $eq: ["$$value", ""] }, "$$this", { $concat: ["$$value", "; ", "$$this"] }] }
+                                }
+                            },
+                            FY: "$FiscalYear",
+                            MemberFirmId: "$MemberFirmId"
+                        }
+                    }
+                ],
+                operationalSqm: [
+                    { $match: { operationalResponsibilitySqm: { $ne: null, $ne: "" } } },
+                    {
+                        $project: {
+                            _id: 0,
+                            Role: "OperationalResponsibilitySqmTitle",
+                            Title: "$operationalResponsibilitySqm.name",
+                            AssignmentName: {
+                                $reduce: {
+                                    input: { $map: { input: { $ifNull: ["$operationalResponsibilitySqm.titleAssignments.assignments", []] }, as: "a", in: { $concat: ["$$a.displayName", ": ", "$$a.email"] } } },
+                                    initialValue: "",
+                                    in: { $cond: [{ $eq: ["$$value", ""] }, "$$this", { $concat: ["$$value", "; ", "$$this"] }] }
+                                }
+                            },
+                            Assignment: {
+                                $reduce: {
+                                    input: { $map: { input: { $ifNull: ["$operationalResponsibilitySqm.titleAssignments.assignments", []] }, as: "a", in: "$$a.email" } },
+                                    initialValue: "",
+                                    in: { $cond: [{ $eq: ["$$value", ""] }, "$$this", { $concat: ["$$value", "; ", "$$this"] }] }
+                                }
+                            },
+                            FY: "$FiscalYear",
+                            MemberFirmId: "$MemberFirmId"
+                        }
+                    }
+                ],
+                compliance: [
+                    { $match: { orIndependenceRequirement: { $ne: null, $ne: "" } } },
+                    {
+                        $project: {
+                            _id: 0,
+                            Role: "OperationalResponsibilityComplianceWithRequirementTitle",
+                            Title: "$orIndependenceRequirement.name",
+                            AssignmentName: {
+                                $reduce: {
+                                    input: { $map: { input: { $ifNull: ["$orIndependenceRequirement.titleAssignments.assignments", []] }, as: "a", in: { $concat: ["$$a.displayName", ": ", "$$a.email"] } } },
+                                    initialValue: "",
+                                    in: { $cond: [{ $eq: ["$$value", ""] }, "$$this", { $concat: ["$$value", "; ", "$$this"] }] }
+                                }
+                            },
+                            Assignment: {
+                                $reduce: {
+                                    input: { $map: { input: { $ifNull: ["$orIndependenceRequirement.titleAssignments.assignments", []] }, as: "a", in: "$$a.email" } },
+                                    initialValue: "",
+                                    in: { $cond: [{ $eq: ["$$value", ""] }, "$$this", { $concat: ["$$value", "; ", "$$this"] }] }
+                                }
+                            },
+                            FY: "$FiscalYear",
+                            MemberFirmId: "$MemberFirmId"
+                        }
+                    }
+                ],
+                monitoring: [
+                    { $match: { orMonitoringRemediation: { $ne: null, $ne: "" } } },
+                    {
+                        $project: {
+                            _id: 0,
+                            Role: "OperationalResponsibilityMonitoringAndRemediationTitle",
+                            Title: "$orMonitoringRemediation.name",
+                            AssignmentName: {
+                                $reduce: {
+                                    input: { $map: { input: { $ifNull: ["$orMonitoringRemediation.titleAssignments.assignments", []] }, as: "a", in: { $concat: ["$$a.displayName", ": ", "$$a.email"] } } },
+                                    initialValue: "",
+                                    in: { $cond: [{ $eq: ["$$value", ""] }, "$$this", { $concat: ["$$value", "; ", "$$this"] }] }
+                                }
+                            },
+                            Assignment: {
+                                $reduce: {
+                                    input: { $map: { input: { $ifNull: ["$orMonitoringRemediation.titleAssignments.assignments", []] }, as: "a", in: "$$a.email" } },
+                                    initialValue: "",
+                                    in: { $cond: [{ $eq: ["$$value", ""] }, "$$this", { $concat: ["$$value", "; ", "$$this"] }] }
+                                }
+                            },
+                            FY: "$FiscalYear",
+                            MemberFirmId: "$MemberFirmId"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $project: {
+                combined: { $concatArrays: ["$ultimate", "$operationalSqm", "$compliance", "$monitoring"] }
+            }
+        },
+        { $unwind: "$combined" },
+        { $replaceRoot: { newRoot: "$combined" } },
+        { $out: "archerentitiestitles" }
+    ]);
 }catch(error){
     print("SYSTEM:Archer Error:: Error at archer entities Query ", error);
     throw(error);
