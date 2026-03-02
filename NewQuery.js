@@ -1,6 +1,6 @@
 // Update the target collection and query specific fields
 db.archerentities.aggregate([
-  { $match: { FiscalYear: "FY26", MemberFirmId: 10307 } },
+  { $match: { FiscalYear: "FY26", Type: 'Member Firm', EventType: {$in:['New','Updated']}, EventAction: 'Update' } },
   {
     $facet: {
       ultimate: [
@@ -70,7 +70,8 @@ db.archerentities.aggregate([
               }
             },
             FY: "$FiscalYear",
-            MemberFirmId: "$MemberFirmId"
+            MemberFirmId: "$MemberFirmId",
+            _id:0
           }
         }
       ],
@@ -141,7 +142,8 @@ db.archerentities.aggregate([
               }
             },
             FY: "$FiscalYear",
-            MemberFirmId: "$MemberFirmId"
+            MemberFirmId: "$MemberFirmId",
+            _id:0
           }
         }
       ],
@@ -212,7 +214,8 @@ db.archerentities.aggregate([
               }
             },
             FY: "$FiscalYear",
-            MemberFirmId: "$MemberFirmId"
+            MemberFirmId: "$MemberFirmId",
+            _id:0
           }
         }
       ],
@@ -283,7 +286,8 @@ db.archerentities.aggregate([
               }
             },
             FY: "$FiscalYear",
-            MemberFirmId: "$MemberFirmId"
+            MemberFirmId: "$MemberFirmId",
+            _id:0
           }
         }
       ]
