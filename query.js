@@ -2188,14 +2188,13 @@ try{
         {
             $match: {
                 Type: 'Member Firm',
-                EventAction: 'Update',
-                EventType: {$in: ['New', 'Updated']}
+                EventType: {$ne: 'Deleted'},
             }
         },
         {
-            $facet: {
+            $addFields: {
                 ultimate: [
-                    { $match: { ultimateResponsibility: { $ne: null, $ne: "" } } },
+                    {$unwind: {path:"$ultimateResponsibility", preserveNullAndEmptyArrays:true}},
                     {
                         $project: {
                             _id: 0,
@@ -2221,7 +2220,7 @@ try{
                     }
                 ],
                 operationalSqm: [
-                    { $match: { operationalResponsibilitySqm: { $ne: null, $ne: "" } } },
+                    {$unwind: {path:"$operationalResponsibilitySqm", preserveNullAndEmptyArrays:true}},
                     {
                         $project: {
                             _id: 0,
@@ -2307,7 +2306,8 @@ try{
         },
         { $unwind: "$combined" },
         { $replaceRoot: { newRoot: "$combined" } },
-        { $out: "archerentitiestitles" }
+        { $sort: { MemberFirmId: 1, FY: 1} },
+        { $out: "archerentitiestitle" }
     ]);
 }catch(error){
     print("SYSTEM:Archer Error:: Error at archer entities Query ", error);
