@@ -7,47 +7,40 @@ try{
     db.title_prejoined.drop();
 
     var fiscalYearFilter = 2026;
-
-    // 1. Pre-join Titles and Assignments with formatted strings to avoid $expr index bypasses and duplicate logic
     db.title.aggregate([
         { $match: { fiscalYear: fiscalYearFilter } },
+
+        { 
+            $addFields: { 
+                id_str: { $toString: "$_id" } 
+            } 
+        },
+
         {
             $lookup: {
                 from: 'titleassignment',
-                localField: '_id',
-                foreignField: 'titleId',
-                as: 'tas'
+                let: { titleId: "$id_str" },
+                pipeline: [
+                    { 
+                    $match: { 
+                        $expr: { $eq: [ "$titleId", "$$titleId" ] }
+                    } 
+                    }
+                ],
+                as: "tas"
             }
         },
-        { $unwind: { path: "$tas", preserveNullAndEmptyArrays: true } },
         {
             $project: {
-                _id: 0,
-                titleId: { $toString: "$_id" },
-                fiscalYear: 1,
-                titleName: "$name",
-                firmId: "$tas.firmId",
-                assignmentString: {
-                    $reduce: {
-                        input: {
-                            $map: {
-                                input: { $ifNull: ["$tas.assignments", []] },
-                                as: "a",
-                                in: { $concat: ["$$a.displayName", "(", "$$a.email", ")"] }
-                            }
-                        },
-                        initialValue: "",
-                        in: {
-                            $cond: [
-                                { $eq: ["$$value", "" ] },
-                                "$$this",
-                                { $concat: ["$$value", "; ", "$$this" ] }
-                            ]
-                        }
-                    }
-                }
+            _id: 0,
+            titleId: "$id_str",
+            fiscalYear: 1,
+            titleName: "$name",
+            firmId: "$tas.firmId",
+            tas: 1
             }
         },
+
         { $out: "title_prejoined" }
     ]);
 
