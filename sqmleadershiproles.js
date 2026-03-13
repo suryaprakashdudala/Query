@@ -9,42 +9,56 @@ try{
     var fiscalYearFilter = 2026;
     db.title.aggregate([
         { $match: { fiscalYear: fiscalYearFilter } },
-
-        { 
-            $addFields: { 
-                id_str: { $toString: "$_id" } 
-            } 
-        },
-
+        { $addFields: { id_str: { $toString: "$_id" } } },
         {
             $lookup: {
                 from: 'titleassignment',
-                let: { titleId: "$id_str" },
-                pipeline: [
-                    { 
-                    $match: { 
-                        $expr: { $eq: [ "$titleId", "$$titleId" ] }
-                    } 
-                    }
-                ],
-                as: "tas"
+                localField: 'id_str',
+                foreignField: 'titleId',
+                as: 'tas'
             }
         },
         {
             $project: {
-            _id: 0,
-            titleId: "$id_str",
-            fiscalYear: 1,
-            titleName: "$name",
-            firmId: "$tas.firmId",
-            tas: 1
+                _id: 0,
+                titleId: "$id_str",
+                fiscalYear: 1,
+                titleName: "$name",
+                firmId: "$tas.firmId",
+                firmAssignments: {
+                    $map: {
+                        input: "$tas",
+                        as: "t",
+                        in: {
+                            firmId: "$$t.firmId",
+                            assignmentString: {
+                                $reduce: {
+                                    input: {
+                                        $map: {
+                                            input: { $ifNull: ["$$t.assignments", []] },
+                                            as: "a",
+                                            in: { $concat: ["$$a.displayName", "(", "$$a.email", ")"] }
+                                        }
+                                    },
+                                    initialValue: "",
+                                    in: {
+                                        $cond: [
+                                            { $eq: ["$$value", ""] },
+                                            "$$this",
+                                            { $concat: ["$$value", "; ", "$$this"] }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
-
         { $out: "title_prejoined" }
     ]);
 
-    db.title_prejoined.createIndex({ titleId: 1, firmId: 1, fiscalYear: 1 });
+    db.title_prejoined.createIndex({ titleId: 1, fiscalYear: 1 });
 
     // 2. Main Aggregation
     db.firm.aggregate([
@@ -82,14 +96,13 @@ try{
         {
             $lookup: {
                 from: 'title_prejoined',
-                let: { ids: "$lookupIds", fid: "$firmGroupId", fy: "$fiscalYear" },
+                let: { ids: "$lookupIds", fy: "$fiscalYear" },
                 pipeline: [
                     {
                         $match: {
                             $expr: {
                                 $and: [
                                     { $in: ["$titleId", "$$ids"] },
-                                    { $eq: ["$firmId", "$$fid"] },
                                     { $eq: ["$fiscalYear", "$$fy"] }
                                 ]
                             }
@@ -146,7 +159,19 @@ try{
                                     in: {
                                         role: "ultimateResponsibility",
                                         title: "$$r.titleName",
-                                        assignment: "$$r.assignmentString",
+                                        assignment: {
+                                            $reduce: {
+                                                input: {
+                                                    $filter: {
+                                                        input: "$$r.firmAssignments",
+                                                        as: "fa",
+                                                        cond: { $eq: ["$$fa.firmId", "$firmGroupId"] }
+                                                    }
+                                                },
+                                                initialValue: "",
+                                                in: { $concat: ["$$value", "$$this.assignmentString"] }
+                                            }
+                                        },
                                         fiscalYear: "$fiscalYear",
                                         memberFirmId: "$memberFirmId",
                                         country: "$country",
@@ -168,7 +193,19 @@ try{
                                     in: {
                                         role: "operationalResponsibilitySqm",
                                         title: "$$r.titleName",
-                                        assignment: "$$r.assignmentString",
+                                        assignment: {
+                                            $reduce: {
+                                                input: {
+                                                    $filter: {
+                                                        input: "$$r.firmAssignments",
+                                                        as: "fa",
+                                                        cond: { $eq: ["$$fa.firmId", "$firmGroupId"] }
+                                                    }
+                                                },
+                                                initialValue: "",
+                                                in: { $concat: ["$$value", "$$this.assignmentString"] }
+                                            }
+                                        },
                                         fiscalYear: "$fiscalYear",
                                         memberFirmId: "$memberFirmId",
                                         country: "$country",
@@ -188,7 +225,19 @@ try{
                             in: {
                                 role: "orIndependenceRequirement",
                                 title: "$$r.titleName",
-                                assignment: "$$r.assignmentString",
+                                assignment: {
+                                    $reduce: {
+                                        input: {
+                                            $filter: {
+                                                input: "$$r.firmAssignments",
+                                                as: "fa",
+                                                cond: { $eq: ["$$fa.firmId", "$firmGroupId"] }
+                                            }
+                                        },
+                                        initialValue: "",
+                                        in: { $concat: ["$$value", "$$this.assignmentString"] }
+                                    }
+                                },
                                 fiscalYear: "$fiscalYear",
                                 memberFirmId: "$memberFirmId",
                                 country: "$country",
@@ -204,7 +253,19 @@ try{
                             in: {
                                 role: "orMonitoringRemediation",
                                 title: "$$r.titleName",
-                                assignment: "$$r.assignmentString",
+                                assignment: {
+                                    $reduce: {
+                                        input: {
+                                            $filter: {
+                                                input: "$$r.firmAssignments",
+                                                as: "fa",
+                                                cond: { $eq: ["$$fa.firmId", "$firmGroupId"] }
+                                            }
+                                        },
+                                        initialValue: "",
+                                        in: { $concat: ["$$value", "$$this.assignmentString"] }
+                                    }
+                                },
                                 fiscalYear: "$fiscalYear",
                                 memberFirmId: "$memberFirmId",
                                 country: "$country",
