@@ -57,6 +57,21 @@ try{
         { $out: "titleAndAssignments" }
     ]);
 
+    db.titleAndAssignments.aggregate([
+      { $unwind: "$firmAssignments" },
+      {
+        $project: {
+          _id: 0,
+          titleId: 1,
+          fiscalYear: 1,
+          titleName: 1,
+          firmId: "$firmAssignments.firmId",
+          assignmentString: "$firmAssignments.assignmentString"
+        }
+      },
+      { $out: "titleFirmAssignments" }
+    ]);
+
     db.titleAndAssignments.createIndex({ titleId: 1, fiscalYear: 1 });
 
     db.firm.aggregate([
@@ -80,7 +95,7 @@ try{
         },
         {
             $lookup: {
-                from: 'titleAndAssignments',
+                from: 'titleFirmAssignments',
                 let: { ids: "$lookupIds", fy: "$fiscalYear" },
                 pipeline: [
                     {
@@ -100,31 +115,103 @@ try{
         {
             $addFields: {
                 ultimateResponsibility: {
-                    $filter: {
-                        input: "$leadership",
-                        as: "l",
-                        cond: { $in: ["$$l.titleId", { $map: { input: { $ifNull: ["$ultimateResponsibility", []] }, as: "id", in: { $toString: "$$id" } } }] }
+                    $map: {
+                        input: { $ifNull: ["$ultimateResponsibility", []] },
+                        as: "tId",
+                        in: {
+                            $let: {
+                                vars: {
+                                    strId: { $toString: "$$tId" },
+                                    matchingRecs: {
+                                        $filter: { input: "$leadership", as: "l", cond: { $eq: ["$$l.titleId", { $toString: "$$tId" }] } }
+                                    }
+                                },
+                                in: {
+                                    titleId: "$$strId",
+                                    titleName: {
+                                        $let: { vars: { firstMatch: { $arrayElemAt: ["$$matchingRecs", 0] } }, in: { $ifNull: ["$$firstMatch.titleName", ""] } }
+                                    },
+                                    assignmentString: {
+                                        $let: { vars: { firmMatch: { $arrayElemAt: [ { $filter: { input: "$$matchingRecs", as: "m", cond: { $eq: ["$$m.firmId", "$firmGroupId"] } } }, 0 ] } }, in: { $ifNull: ["$$firmMatch.assignmentString", ""] } }
+                                    }
+                                }
+                            }
+                        }
                     }
                 },
                 operationalResponsibilitySqm: {
-                    $filter: {
-                        input: "$leadership",
-                        as: "l",
-                        cond: { $in: ["$$l.titleId", { $map: { input: { $ifNull: ["$operationalResponsibilitySqm", []] }, as: "id", in: { $toString: "$$id" } } }] }
+                    $map: {
+                        input: { $ifNull: ["$operationalResponsibilitySqm", []] },
+                        as: "tId",
+                        in: {
+                            $let: {
+                                vars: {
+                                    strId: { $toString: "$$tId" },
+                                    matchingRecs: {
+                                        $filter: { input: "$leadership", as: "l", cond: { $eq: ["$$l.titleId", { $toString: "$$tId" }] } }
+                                    }
+                                },
+                                in: {
+                                    titleId: "$$strId",
+                                    titleName: {
+                                        $let: { vars: { firstMatch: { $arrayElemAt: ["$$matchingRecs", 0] } }, in: { $ifNull: ["$$firstMatch.titleName", ""] } }
+                                    },
+                                    assignmentString: {
+                                        $let: { vars: { firmMatch: { $arrayElemAt: [ { $filter: { input: "$$matchingRecs", as: "m", cond: { $eq: ["$$m.firmId", "$firmGroupId"] } } }, 0 ] } }, in: { $ifNull: ["$$firmMatch.assignmentString", ""] } }
+                                    }
+                                }
+                            }
+                        }
                     }
                 },
                 orIndependenceRequirement: {
-                    $filter: {
-                        input: "$leadership",
-                        as: "l",
-                        cond: { $eq: ["$$l.titleId", { $toString: "$orIndependenceRequirement" }] }
+                    $map: {
+                        input: { $cond: [{ $ne: ["$orIndependenceRequirement", null] }, ["$orIndependenceRequirement"], []] },
+                        as: "tId",
+                        in: {
+                            $let: {
+                                vars: {
+                                    strId: { $toString: "$$tId" },
+                                    matchingRecs: {
+                                        $filter: { input: "$leadership", as: "l", cond: { $eq: ["$$l.titleId", { $toString: "$$tId" }] } }
+                                    }
+                                },
+                                in: {
+                                    titleId: "$$strId",
+                                    titleName: {
+                                        $let: { vars: { firstMatch: { $arrayElemAt: ["$$matchingRecs", 0] } }, in: { $ifNull: ["$$firstMatch.titleName", ""] } }
+                                    },
+                                    assignmentString: {
+                                        $let: { vars: { firmMatch: { $arrayElemAt: [ { $filter: { input: "$$matchingRecs", as: "m", cond: { $eq: ["$$m.firmId", "$firmGroupId"] } } }, 0 ] } }, in: { $ifNull: ["$$firmMatch.assignmentString", ""] } }
+                                    }
+                                }
+                            }
+                        }
                     }
                 },
                 orMonitoringRemediation: {
-                    $filter: {
-                        input: "$leadership",
-                        as: "l",
-                        cond: { $eq: ["$$l.titleId", { $toString: "$orMonitoringRemediation" }] }
+                    $map: {
+                        input: { $cond: [{ $ne: ["$orMonitoringRemediation", null] }, ["$orMonitoringRemediation"], []] },
+                        as: "tId",
+                        in: {
+                            $let: {
+                                vars: {
+                                    strId: { $toString: "$$tId" },
+                                    matchingRecs: {
+                                        $filter: { input: "$leadership", as: "l", cond: { $eq: ["$$l.titleId", { $toString: "$$tId" }] } }
+                                    }
+                                },
+                                in: {
+                                    titleId: "$$strId",
+                                    titleName: {
+                                        $let: { vars: { firstMatch: { $arrayElemAt: ["$$matchingRecs", 0] } }, in: { $ifNull: ["$$firstMatch.titleName", ""] } }
+                                    },
+                                    assignmentString: {
+                                        $let: { vars: { firmMatch: { $arrayElemAt: [ { $filter: { input: "$$matchingRecs", as: "m", cond: { $eq: ["$$m.firmId", "$firmGroupId"] } } }, 0 ] } }, in: { $ifNull: ["$$firmMatch.assignmentString", ""] } }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -143,19 +230,7 @@ try{
                                         in: {
                                             role: "ultimateResponsibility",
                                             title: "$$r.titleName",
-                                            assignment: {
-                                                $reduce: {
-                                                    input: {
-                                                        $filter: {
-                                                            input: "$$r.firmAssignments",
-                                                            as: "fa",
-                                                            cond: { $eq: ["$$fa.firmId", "$firmGroupId"] }
-                                                        }
-                                                    },
-                                                    initialValue: "",
-                                                    in: { $concat: ["$$value", "$$this.assignmentString"] }
-                                                }
-                                            },
+                                            assignment: "$$r.assignmentString",
                                             fiscalYear: "$fiscalYear",
                                             memberFirmId: "$memberFirmId",
                                             country: "$country",
@@ -179,19 +254,7 @@ try{
                                         in: {
                                             role: "operationalResponsibilitySqm",
                                             title: "$$r.titleName",
-                                            assignment: {
-                                                $reduce: {
-                                                    input: {
-                                                        $filter: {
-                                                            input: "$$r.firmAssignments",
-                                                            as: "fa",
-                                                            cond: { $eq: ["$$fa.firmId", "$firmGroupId"] }
-                                                        }
-                                                    },
-                                                    initialValue: "",
-                                                    in: { $concat: ["$$value", "$$this.assignmentString"] }
-                                                }
-                                            },
+                                            assignment: "$$r.assignmentString",
                                             fiscalYear: "$fiscalYear",
                                             memberFirmId: "$memberFirmId",
                                             country: "$country",
@@ -215,19 +278,7 @@ try{
                                         in: {
                                             role: "orIndependenceRequirement",
                                             title: "$$r.titleName",
-                                            assignment: {
-                                                $reduce: {
-                                                    input: {
-                                                        $filter: {
-                                                            input: "$$r.firmAssignments",
-                                                            as: "fa",
-                                                            cond: { $eq: ["$$fa.firmId", "$firmGroupId"] }
-                                                        }
-                                                    },
-                                                    initialValue: "",
-                                                    in: { $concat: ["$$value", "$$this.assignmentString"] }
-                                                }
-                                            },
+                                            assignment: "$$r.assignmentString",
                                             fiscalYear: "$fiscalYear",
                                             memberFirmId: "$memberFirmId",
                                             country: "$country",
@@ -251,19 +302,7 @@ try{
                                         in: {
                                             role: "orMonitoringRemediation",
                                             title: "$$r.titleName",
-                                            assignment: {
-                                                $reduce: {
-                                                    input: {
-                                                        $filter: {
-                                                            input: "$$r.firmAssignments",
-                                                            as: "fa",
-                                                            cond: { $eq: ["$$fa.firmId", "$firmGroupId"] }
-                                                        }
-                                                    },
-                                                    initialValue: "",
-                                                    in: { $concat: ["$$value", "$$this.assignmentString"] }
-                                                }
-                                            },
+                                            assignment: "$$r.assignmentString",
                                             fiscalYear: "$fiscalYear",
                                             memberFirmId: "$memberFirmId",
                                             country: "$country",
