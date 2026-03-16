@@ -116,7 +116,7 @@ try{
             $addFields: {
                 ultimateResponsibility: {
                     $map: {
-                        input: { $ifNull: ["$ultimateResponsibility", []] },
+                        input: { $filter: { input: { $ifNull: ["$ultimateResponsibility", []] }, as: "v", cond: { $and: [{ $ne: ["$$v", ""] }, { $ne: ["$$v", null] }] } } },
                         as: "tId",
                         in: {
                             $let: {
@@ -141,7 +141,7 @@ try{
                 },
                 operationalResponsibilitySqm: {
                     $map: {
-                        input: { $ifNull: ["$operationalResponsibilitySqm", []] },
+                        input: { $filter: { input: { $ifNull: ["$operationalResponsibilitySqm", []] }, as: "v", cond: { $and: [{ $ne: ["$$v", ""] }, { $ne: ["$$v", null] }] } } },
                         as: "tId",
                         in: {
                             $let: {
@@ -166,7 +166,7 @@ try{
                 },
                 orIndependenceRequirement: {
                     $map: {
-                        input: { $cond: [{ $ne: ["$orIndependenceRequirement", null] }, ["$orIndependenceRequirement"], []] },
+                        input: { $filter: { input: { $cond: [{ $ne: ["$orIndependenceRequirement", null] }, ["$orIndependenceRequirement"], []] }, as: "v", cond: { $and: [{ $ne: ["$$v", ""] }, { $ne: ["$$v", null] }] } } },
                         as: "tId",
                         in: {
                             $let: {
@@ -191,7 +191,7 @@ try{
                 },
                 orMonitoringRemediation: {
                     $map: {
-                        input: { $cond: [{ $ne: ["$orMonitoringRemediation", null] }, ["$orMonitoringRemediation"], []] },
+                        input: { $filter: { input: { $cond: [{ $ne: ["$orMonitoringRemediation", null] }, ["$orMonitoringRemediation"], []] }, as: "v", cond: { $and: [{ $ne: ["$$v", ""] }, { $ne: ["$$v", null] }] } } },
                         as: "tId",
                         in: {
                             $let: {
@@ -237,7 +237,7 @@ try{
                                             firmGroupId: "$firmGroupId",
                                             name: "$name",
                                             type: "$type",
-                                            leadershipId: { $toObjectId: "$$r.titleId" }
+                                            leadershipId: { $cond: [ {$and: [{ $eq: ["$$r.titleId", null] }, { $eq: ["$$r.titleId", ""] }], then: "", else: { $toObjectId: "$$r.titleId" } } ] }
                                         }
                                     } 
                                 },
@@ -261,7 +261,7 @@ try{
                                             firmGroupId: "$firmGroupId",
                                             name: "$name",
                                             type: "$type",
-                                            leadershipId: { $toObjectId: "$$r.titleId" }
+                                            leadershipId: { $cond: [ {$and: [{ $eq: ["$$r.titleId", null] }, { $eq: ["$$r.titleId", ""] }], then: "", else: { $toObjectId: "$$r.titleId" } } ] }
                                         }
                                     } 
                                 },
@@ -285,7 +285,7 @@ try{
                                             firmGroupId: "$firmGroupId",
                                             name: "$name",
                                             type: "$type",
-                                            leadershipId: { $toObjectId: "$$r.titleId" }
+                                            leadershipId: { $cond: [ {$and: [{ $eq: ["$$r.titleId", null] }, { $eq: ["$$r.titleId", ""] }], then: "", else: { $toObjectId: "$$r.titleId" } } ] }
                                         }
                                     } 
                                 },
@@ -309,8 +309,11 @@ try{
                                             firmGroupId: "$firmGroupId",
                                             name: "$name",
                                             type: "$type",
-                                            leadershipId: { $toObjectId: "$$r.titleId" }
-                                        }
+                                            // leadershipId: { $convert: { input: "$$r.titleId", to: "objectId", onError: '', onNull: '' } }
+                                            leadershipId:  {$cond:[
+                                                {$and: [{ $eq: ["$$r.titleId", null] }, { $eq: ["$$r.titleId", ""] }], then: "", else: { $toObjectId: "$$r.titleId" }}
+                                            ]}
+                                        }   
                                     } 
                                 },
                                 [{ role: "orMonitoringRemediation", title: "", assignment: "", fiscalYear: "$fiscalYear", memberFirmId: "$memberFirmId", country: "$country", firmGroupId: "$firmGroupId", name: "$name", type: "$type" }]
