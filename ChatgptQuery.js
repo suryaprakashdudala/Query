@@ -106,7 +106,7 @@ db.firm.aggregate([
                 },
                 {
                     $addFields: {
-                        firmAssignments: {
+                        assignmentString: {
                             $reduce: {
                                 input: {
                                     $map: {
@@ -140,7 +140,7 @@ db.firm.aggregate([
                         titleId: "$id_str",
                         titleName: "$name",
                         firmId: "$tas.firmId",
-                        firmAssignments: 1
+                        assignmentString: 1
                     }
                 }
             ],
@@ -148,33 +148,57 @@ db.firm.aggregate([
         }
     },
 
-    // Step 4: pick correct firm-specific assignment (fallback if not found)
+    // STEP 4: explode leadership → THIS restores missing records
+    {
+        $unwind: {
+            path: "$leadership",
+            preserveNullAndEmptyArrays: true
+        }
+    },
+
+    // STEP 5: filter only relevant firm OR fallback
     {
         $addFields: {
-            selectedLeadership: {
-                $let: {
-                    vars: {
-                        matched: {
-                            $filter: {
-                                input: "$leadership",
-                                as: "l",
-                                cond: { $eq: ["$$l.firmId", "$firmGroupId"] }
-                            }
-                        }
-                    },
-                    in: {
-                        $cond: [
-                            { $gt: [{ $size: "$$matched" }, 0] },
-                            { $arrayElemAt: ["$$matched", 0] },
-                            { $arrayElemAt: ["$leadership", 0] }
-                        ]
-                    }
+            isMatchingFirm: {
+                $eq: ["$leadership.firmId", "$firmGroupId"]
+            }
+        }
+    },
+
+    // STEP 6: prefer matching firm, but allow fallback
+    {
+        $group: {
+            _id: {
+                firm: "$_id",
+                role: "$assignedTitles.role",
+                titleId: "$assignedTitles.id"
+            },
+            doc: { $first: "$$ROOT" },
+            matching: {
+                $push: {
+                    $cond: ["$isMatchingFirm", "$$ROOT", "$$REMOVE"]
                 }
             }
         }
     },
 
-    // Step 5: final clean output
+    {
+        $addFields: {
+            selected: {
+                $cond: [
+                    { $gt: [{ $size: "$matching" }, 0] },
+                    { $arrayElemAt: ["$matching", 0] },
+                    "$doc"
+                ]
+            }
+        }
+    },
+
+    {
+        $replaceRoot: { newRoot: "$selected" }
+    },
+
+    // STEP 7: final output
     {
         $project: {
             _id: 0,
@@ -188,8 +212,15 @@ db.firm.aggregate([
             role: "$assignedTitles.role",
             leadershipId: "$assignedTitles.id",
 
-            title: "$selectedLeadership.titleName",
-            assignment: "$selectedLeadership.firmAssignments"
+            title: "$leadership.titleName",
+            assignment: "$leadership.assignmentString"
+        }
+    },
+
+    {
+        $sort: {
+            fiscalYear: 1,
+            memberFirmId: 1
         }
     },
 
@@ -197,4 +228,4 @@ db.firm.aggregate([
         $out: "sqmleadership"
     }
 
-]);
+], { allowDiskUse: true });
