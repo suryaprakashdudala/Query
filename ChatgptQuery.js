@@ -1,5 +1,7 @@
 var fiscalYearFilter = 2026;
 
+db.sqmleadership.drop();
+
 db.firm.aggregate([
 
     {
@@ -9,13 +11,12 @@ db.firm.aggregate([
         }
     },
 
-    // Step 1: Normalize all role IDs WITH role context
+    // STEP 1: create role-aware IDs
     {
         $addFields: {
             assignedTitles: {
                 $concatArrays: [
 
-                    // ultimateResponsibility
                     {
                         $map: {
                             input: { $ifNull: ["$ultimateResponsibility", []] },
@@ -23,8 +24,6 @@ db.firm.aggregate([
                             in: { id: "$$id", role: "ultimateResponsibility" }
                         }
                     },
-
-                    // operationalResponsibilitySqm
                     {
                         $map: {
                             input: { $ifNull: ["$operationalResponsibilitySqm", []] },
@@ -32,8 +31,6 @@ db.firm.aggregate([
                             in: { id: "$$id", role: "operationalResponsibilitySqm" }
                         }
                     },
-
-                    // orIndependenceRequirement
                     {
                         $cond: [
                             { $ne: ["$orIndependenceRequirement", null] },
@@ -44,8 +41,6 @@ db.firm.aggregate([
                             []
                         ]
                     },
-
-                    // orMonitoringRemediation
                     {
                         $cond: [
                             { $ne: ["$orMonitoringRemediation", null] },
@@ -61,86 +56,28 @@ db.firm.aggregate([
         }
     },
 
-    // Step 2: explode roles (SAFE now because role is preserved)
+    // STEP 2: explode titles
     {
-        $unwind: {
-            path: "$assignedTitles",
-            preserveNullAndEmptyArrays: false
-        }
+        $unwind: "$assignedTitles"
     },
 
-    // Step 3: lookup title + assignments
+    // STEP 3: lookup into pre-expanded collection
     {
         $lookup: {
-            from: "title",
-            let: { titleId: "$assignedTitles.id", fy: "$fiscalYear" },
+            from: "titleAndAssignments",
+            let: {
+                id: "$assignedTitles.id",
+                fy: "$fiscalYear"
+            },
             pipeline: [
-                {
-                    $addFields: {
-                        id_str: { $toString: "$_id" }
-                    }
-                },
                 {
                     $match: {
                         $expr: {
                             $and: [
-                                { $eq: ["$id_str", "$$titleId"] },
+                                { $eq: ["$titleId", "$$id"] },
                                 { $eq: ["$fiscalYear", "$$fy"] }
                             ]
                         }
-                    }
-                },
-                {
-                    $lookup: {
-                        from: "titleassignment",
-                        localField: "id_str",
-                        foreignField: "titleId",
-                        as: "tas"
-                    }
-                },
-                {
-                    $unwind: {
-                        path: "$tas",
-                        preserveNullAndEmptyArrays: true
-                    }
-                },
-                {
-                    $addFields: {
-                        assignmentString: {
-                            $reduce: {
-                                input: {
-                                    $map: {
-                                        input: { $ifNull: ["$tas.assignments", []] },
-                                        as: "a",
-                                        in: {
-                                            $concat: [
-                                                "$$a.displayName",
-                                                " (",
-                                                "$$a.email",
-                                                ")"
-                                            ]
-                                        }
-                                    }
-                                },
-                                initialValue: "",
-                                in: {
-                                    $cond: [
-                                        { $eq: ["$$value", ""] },
-                                        "$$this",
-                                        { $concat: ["$$value", "; ", "$$this"] }
-                                    ]
-                                }
-                            }
-                        }
-                    }
-                },
-                {
-                    $project: {
-                        _id: 0,
-                        titleId: "$id_str",
-                        titleName: "$name",
-                        firmId: "$tas.firmId",
-                        assignmentString: 1
                     }
                 }
             ],
@@ -148,7 +85,7 @@ db.firm.aggregate([
         }
     },
 
-    // STEP 4: explode leadership → THIS restores missing records
+    // 🔥 CRITICAL STEP → THIS CREATES MULTIPLE ROWS
     {
         $unwind: {
             path: "$leadership",
@@ -156,49 +93,19 @@ db.firm.aggregate([
         }
     },
 
-    // STEP 5: filter only relevant firm OR fallback
+    // STEP 4: keep only matching firm OR allow null fallback
     {
-        $addFields: {
-            isMatchingFirm: {
-                $eq: ["$leadership.firmId", "$firmGroupId"]
-            }
-        }
-    },
-
-    // STEP 6: prefer matching firm, but allow fallback
-    {
-        $group: {
-            _id: {
-                firm: "$_id",
-                role: "$assignedTitles.role",
-                titleId: "$assignedTitles.id"
-            },
-            doc: { $first: "$$ROOT" },
-            matching: {
-                $push: {
-                    $cond: ["$isMatchingFirm", "$$ROOT", "$$REMOVE"]
-                }
-            }
-        }
-    },
-
-    {
-        $addFields: {
-            selected: {
-                $cond: [
-                    { $gt: [{ $size: "$matching" }, 0] },
-                    { $arrayElemAt: ["$matching", 0] },
-                    "$doc"
+        $match: {
+            $expr: {
+                $or: [
+                    { $eq: ["$leadership.firmId", "$firmGroupId"] },
+                    { $eq: ["$leadership.firmId", null] }
                 ]
             }
         }
     },
 
-    {
-        $replaceRoot: { newRoot: "$selected" }
-    },
-
-    // STEP 7: final output
+    // STEP 5: final projection
     {
         $project: {
             _id: 0,
@@ -213,7 +120,7 @@ db.firm.aggregate([
             leadershipId: "$assignedTitles.id",
 
             title: "$leadership.titleName",
-            assignment: "$leadership.assignmentString"
+            assignment: "$leadership.firmAssignments"
         }
     },
 
