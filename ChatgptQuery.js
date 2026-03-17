@@ -8,7 +8,6 @@ try {
 
     db.firm.aggregate([
 
-        // STEP 1: Filter firms
         {
             $match: {
                 fiscalYear: fiscalYearFilter,
@@ -16,56 +15,37 @@ try {
             }
         },
 
-        // STEP 2: Normalize all roles into one array
+        // STEP 1: Build assignedTitles
         {
             $addFields: {
                 assignedTitles: {
                     $concatArrays: [
 
-                        // ultimateResponsibility
                         {
                             $map: {
                                 input: { $ifNull: ["$ultimateResponsibility", []] },
                                 as: "id",
-                                in: {
-                                    id: { $toString: "$$id" },
-                                    role: "ultimateResponsibility"
-                                }
+                                in: { id: { $toString: "$$id" }, role: "ultimateResponsibility" }
                             }
                         },
-
-                        // operationalResponsibilitySqm
                         {
                             $map: {
                                 input: { $ifNull: ["$operationalResponsibilitySqm", []] },
                                 as: "id",
-                                in: {
-                                    id: { $toString: "$$id" },
-                                    role: "operationalResponsibilitySqm"
-                                }
+                                in: { id: { $toString: "$$id" }, role: "operationalResponsibilitySqm" }
                             }
                         },
-
-                        // orIndependenceRequirement
                         {
                             $cond: [
                                 { $ne: ["$orIndependenceRequirement", null] },
-                                [{
-                                    id: { $toString: "$orIndependenceRequirement" },
-                                    role: "orIndependenceRequirement"
-                                }],
+                                [{ id: { $toString: "$orIndependenceRequirement" }, role: "orIndependenceRequirement" }],
                                 []
                             ]
                         },
-
-                        // orMonitoringRemediation
                         {
                             $cond: [
                                 { $ne: ["$orMonitoringRemediation", null] },
-                                [{
-                                    id: { $toString: "$orMonitoringRemediation" },
-                                    role: "orMonitoringRemediation"
-                                }],
+                                [{ id: { $toString: "$orMonitoringRemediation" }, role: "orMonitoringRemediation" }],
                                 []
                             ]
                         }
@@ -74,7 +54,25 @@ try {
             }
         },
 
-        // STEP 3: Unwind roles (preserves multiple roles & titles)
+        // ✅ STEP 2: Inject default roles if empty
+        {
+            $addFields: {
+                assignedTitles: {
+                    $cond: [
+                        { $gt: [{ $size: "$assignedTitles" }, 0] },
+                        "$assignedTitles",
+                        [
+                            { id: "", role: "ultimateResponsibility" },
+                            { id: "", role: "operationalResponsibilitySqm" },
+                            { id: "", role: "orIndependenceRequirement" },
+                            { id: "", role: "orMonitoringRemediation" }
+                        ]
+                    ]
+                }
+            }
+        },
+
+        // STEP 3: Unwind
         {
             $unwind: {
                 path: "$assignedTitles",
@@ -82,7 +80,7 @@ try {
             }
         },
 
-        // STEP 4: Lookup from temp collection (NO firm filter here)
+        // STEP 4: Lookup
         {
             $lookup: {
                 from: "titleFirmAssignments",
@@ -107,7 +105,7 @@ try {
             }
         },
 
-        // STEP 5: Select correct assignment OR fallback to title only
+        // STEP 5: Select assignment or fallback
         {
             $addFields: {
                 selectedLeadership: {
@@ -120,19 +118,12 @@ try {
                                     cond: { $eq: ["$$l.firmId", "$firmGroupId"] }
                                 }
                             },
-                            anyTitle: {
-                                $arrayElemAt: ["$leadership", 0]
-                            }
+                            anyTitle: { $arrayElemAt: ["$leadership", 0] }
                         },
                         in: {
                             $cond: [
-                                // ✅ Case 1: firm-specific assignment exists
                                 { $gt: [{ $size: "$$firmMatch" }, 0] },
-                                {
-                                    $arrayElemAt: ["$$firmMatch", 0]
-                                },
-
-                                // ✅ Case 2: fallback → title only
+                                { $arrayElemAt: ["$$firmMatch", 0] },
                                 {
                                     titleName: { $ifNull: ["$$anyTitle.titleName", ""] },
                                     assignmentString: ""
@@ -144,7 +135,7 @@ try {
             }
         },
 
-        // STEP 6: Final projection
+        // STEP 6: Final output
         {
             $project: {
                 _id: 0,
@@ -158,12 +149,10 @@ try {
                 role: "$assignedTitles.role",
                 leadershipId: {
                     $cond: [
-                        {
-                            $or: [
-                                { $eq: ["$assignedTitles.id", null] },
-                                { $eq: ["$assignedTitles.id", ""] }
-                            ]
-                        },
+                        { $or: [
+                            { $eq: ["$assignedTitles.id", ""] },
+                            { $eq: ["$assignedTitles.id", null] }
+                        ]},
                         "",
                         { $toObjectId: "$assignedTitles.id" }
                     ]
@@ -174,22 +163,14 @@ try {
             }
         },
 
-        // STEP 7: Sort (optional but good for Power BI)
-        {
-            $sort: { fiscalYear: 1, memberFirmId: 1 }
-        },
+        { $sort: { fiscalYear: 1, memberFirmId: 1 } },
 
-        // STEP 8: Output
-        {
-            $out: "sqmleadership"
-        }
+        { $out: "sqmleadership" }
 
     ], { allowDiskUse: true });
 
     var endTime = new Date();
-    print(
-        "SYSTEM:Power-BI-Info:: Completed SQM Leadership Roles script at ",
-        endTime.toISOString(),
+    print("SYSTEM:Power-BI-Info:: Completed SQM Leadership Roles script at ", endTime.toISOString(),
         " Total execution time (minutes): ",
         (endTime.getTime() - startTime.getTime()) / 60000
     );
