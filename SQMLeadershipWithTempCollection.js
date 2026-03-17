@@ -57,23 +57,6 @@ try{
         { $out: "titleAndAssignments" }
     ]);
 
-    db.titleAndAssignments.createIndex({ titleId: 1, fiscalYear: 1 });
-
-    db.titleAndAssignments.aggregate([
-      { $unwind: "$firmAssignments" },
-      {
-        $project: {
-          _id: 0,
-          titleId: 1,
-          fiscalYear: 1,
-          titleName: 1,
-          firmId: "$firmAssignments.firmId",
-          assignmentString: "$firmAssignments.assignmentString"
-        }
-      },
-      { $out: "titleFirmAssignments" }
-    ]);
-
     db.firm.aggregate([
         {
             $match: {
@@ -144,7 +127,7 @@ try{
                 }
             }
         },
-       {
+        {
             $addFields: {
                 combined: {
                     $concatArrays: [
@@ -323,7 +306,7 @@ try{
         { $unwind: "$combined" },
         { $replaceRoot: { newRoot: "$combined" } },
         { $sort: { fiscalYear: 1, memberFirmId: 1 } },
-        { $out: 'sqmleadership' }
+        { $out: 'memberFirmTitles' }
     ], { allowDiskUse: true });
     
     // db.titleAndAssignments.drop();
