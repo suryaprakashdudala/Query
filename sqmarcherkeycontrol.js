@@ -1387,27 +1387,33 @@ try {
                         if: { $eq: ['$abbreviation', autoQoNotReqFirms] },
                         then: {
                             $filter: {
-                                input: { $ifNull: ['$requirementcontrol.relatedQualityRisks', []] },
-                                as: 'qr',
-                                cond: {
-                                    $let:{
-                                        vars: {
-                                            objectives: { $ifNull: ['$$qr.relatedObjectives', []] }
-                                        },
+                                input: {
+                                    $map: {
+                                        input: { $ifNull: ['$requirementcontrol.relatedQualityRisks', []] },
+                                        as: 'qr',
                                         in: {
-                                            $anyElementTrue: {
-                                                $map: {
-                                                    input: '$$objectives',
-                                                    as: 'objId',
-                                                    in: {
-                                                        $not: {
-                                                            $in: ['$$objId', '$rebacPoliciesRelatedToQOs.objectId']
+                                            $mergeObjects: [
+                                                '$$qr',
+                                                {
+                                                    relatedObjectives: {
+                                                        $filter: {
+                                                            input: { $ifNull: ['$$qr.relatedObjectives', []] },
+                                                            as: 'objId',
+                                                            cond: {
+                                                                $not: {
+                                                                    $in: ['$$objId', '$rebacPoliciesRelatedToQOs.objectId']
+                                                                }
+                                                            }
                                                         }
                                                     }
                                                 }
-                                            }
+                                            ]
                                         }
                                     }
+                                },
+                                as: 'filteredQr',
+                                cond: {
+                                    $gt: [{ $size: '$$filteredQr.relatedObjectives' }, 0]
                                 }
                             }
                         },
