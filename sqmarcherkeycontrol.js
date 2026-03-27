@@ -18,9 +18,7 @@ try {
                     { $ne: ['$publishedDate', ''] },
                     { $and: [{ $eq: ['$isPublishQueryRun', false] }, { $or: [{ $eq: ['$isAutoPublished', true] }, { $eq: ['$isReadOnly', false] }] }] },
                     { $in: ["$fiscalYear", fiscalYearFilter] },
-                    { $or: [{ $eq: ["$isRollForwardedFromPreFY", true] }, { $eq: ["$isCreatedInCurrentFY", true] }] },
-                    { $or: [{ $eq: ["$abbreviation", 'NTW'] }, { $eq: ["$abbreviation", 'USA'] }] }
-                ]
+                    { $or: [{ $eq: ["$isRollForwardedFromPreFY", true] }, { $eq: ["$isCreatedInCurrentFY", true] }] }                ]
             }
         }
     },
@@ -1313,18 +1311,24 @@ try {
                 'objectives':
                 {
                     $cond: {
-                        if: {
-                            $not:
-                                { $or: [{ $eq: ['$requirementcontrol.isQoOverrideEnabled', undefined] }, { $eq: ['$requirementcontrol.isQoOverrideEnabled', ''] }, { $eq: ['$requirementcontrol.isQoOverrideEnabled', null] }] }
-                        },
-                        then: '$requirementcontrol.relatedObjectives',
-                        else: {
-                            $reduce: {
-                                input: '$requirementcontrol.relatedQualityRisks.relatedObjectives',
-                                initialValue: [],
-                                in: { $concatArrays: ['$$value', '$$this'] }
+                        if: { $eq: ['$abbreviation', 'USA'] },
+                        then: {
+                            $cond: {
+                                if: {
+                                    $not:
+                                    { $or: [{ $eq: ['$requirementcontrol.isQoOverrideEnabled', undefined] }, { $eq: ['$requirementcontrol.isQoOverrideEnabled', ''] }, { $eq: ['$requirementcontrol.isQoOverrideEnabled', null] }] }
+                                },
+                                then: '$requirementcontrol.relatedObjectives',
+                                else: {
+                                    $reduce: {
+                                        input: '$requirementcontrol.relatedQualityRisks.relatedObjectives',
+                                        initialValue: [],
+                                        in: { $concatArrays: ['$$value', '$$this'] }
+                                    }
+                                }
                             }
-                        }
+                        },
+                        else: []
                     }
                 }
             }
@@ -1342,6 +1346,7 @@ try {
                             $expr: {
                                 $and: [
                                     { $eq: ['$policyId', globalQOApplicabilityPolicyId] },
+                                    { $eq: ['$$firmId', autoQoNotReqFirms] },
                                     { $eq: ['$toEntity', '$$firmId'] },
                                     {
                                         $in: ['$objectId', '$$objectives']
@@ -1388,19 +1393,19 @@ try {
                                     $let:{
                                         vars: {
                                             objectives: { $ifNull: ['$$qr.relatedObjectives', []] }
-                                        }
-                                    },
-                                    in: {
-                                        $not: {
-                                            $and: [
-                                                { $eq: [{ $size: '$$objectives' }, 1] },
-                                                {
-                                                    $in: [
-                                                        { $arrayElemAt: ['$$objectives', 0] },
-                                                        '$rebacPoliciesRelatedToQOs.objectId'
-                                                    ]
+                                        },
+                                        in: {
+                                            $anyElementTrue: {
+                                                $map: {
+                                                    input: '$$objectives',
+                                                    as: 'objId',
+                                                    in: {
+                                                        $not: {
+                                                            $in: ['$$objId', '$rebacPoliciesRelatedToQOs.objectId']
+                                                        }
+                                                    }
                                                 }
-                                            ]
+                                            }
                                         }
                                     }
                                 }

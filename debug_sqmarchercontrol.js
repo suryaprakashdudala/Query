@@ -167,7 +167,7 @@ db.firm.aggregate([
             EntityId: '$abbreviation',
             FiscalYear: '$fiscalYear',
             associatedQualityObjectives: '$associatedQualityObjectives',
-            relatedQualityRisks:1,
+            relatedQualityRisks:'$relatedQualityRisks',
             QualityObjectiveUniquesIds: {
                 $reduce: {
                     input: '$associatedQualityObjectives',
