@@ -115,41 +115,31 @@ db.firm.aggregate([
             }
         },
     {
-            $set: {
-                'relatedQualityRisks': {
-                    $cond: {
-                        if: { $eq: ['$abbreviation', 'USA'] },
-                        then: {
-                            $filter: {
-                                input: { $ifNull: ['$objectives', []] },
-                                as: 'qr',
-                                cond: {
-                                    $let:{
-                                        vars: {
-                                            objectives: { $ifNull: ['$objectives', []] }
-                                        },
-                                        in: {
-                                            $anyElementTrue: {
-                                                $map: {
-                                                    input: '$$objectives',
-                                                    as: 'objId',
-                                                    in: {
-                                                        $not: {
-                                                            $in: ['$$objId', '$rebacPoliciesRelatedToQOs.objectId']
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
+        $set: {
+            'objectives': {
+                $cond: {
+                    if: { $eq: ['$abbreviation', 'USA'] },
+                    then: {
+                        $filter: {
+                            input: { $ifNull: ['$objectives', []] },
+                            as: 'qoId',
+                            cond: {
+                                $not: {
+                                    $in: ['$$qoId', '$rebacPoliciesRelatedToQOs.objectId']
                                 }
                             }
-                        },
-                        else: '$objectives'
-                    }
+                        }
+                    },
+                    else: '$objectives'
                 }
             }
-        },
+        }
+    },
+    {
+        $set: {
+            'relatedQualityRisks': '$objectives'
+        }
+    },
     {
         $lookup: {
             from: 'documentation',
