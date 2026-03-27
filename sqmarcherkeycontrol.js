@@ -6,7 +6,7 @@ try {
     fiscalYearFilter = fiscalYearFilter.split(",").map(function (year) {
         return parseInt(year, 10);
     });
-    
+    var policyId = ['EXC-GLOBAL-LOC-GLOBAL-USA'];
     var publishedEntityIds = db.firm.aggregate([{
         $match: {
             $expr: {
@@ -1337,7 +1337,7 @@ try {
                         $match: {
                             $expr: {
                                 $and: [
-                                    { $eq: ['$$firmId', 'USA'] },
+                                    { $in: ['$policyId', policyId] },
                                     { $eq: ['$toEntity', '$$firmId'] },
                                     {
                                         $in: ['$objectId', '$$objectives']
@@ -1422,7 +1422,7 @@ try {
                         }
                     }
                 },
-                { $project: { _id: 0, qualityObjectiveId: 1, uniqueId: 1 } }],
+                { $project: { _id: 0, qualityObjectiveId: 1 } }],
                 as: 'associatedQualityObjectives'
             }
         }, {
@@ -2868,124 +2868,40 @@ try {
                 as: 'keyControl.controlOperatorTitleAssignments'
             }
         }, {
-            $addFields: {
-                'objectives':
-                {
-                    $cond: {
-                        if: {
-                            $not:
-                                { $or: [{ $eq: ['$keyControl.isQoOverrideEnabled', undefined] }, { $eq: ['$keyControl.isQoOverrideEnabled', ''] }, { $eq: ['$keyControl.isQoOverrideEnabled', null] }] }
-                        },
-                        then: '$keyControl.relatedObjectives',
-                        else: {
-                            $reduce: {
-                                input: '$keyControl.relatedQualityRisks.relatedObjectives',
-                                initialValue: [],
-                                in: { $concatArrays: ['$$value', '$$this'] }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        {
-            $lookup: {
-                from: 'rebacpolicy',
-                let: {
-                    firmId: '$abbreviation',
-                    objectives: '$objectives'
-                },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ['$$firmId', 'USA'] },
-                                    { $eq: ['$toEntity', '$$firmId'] },
-                                    {
-                                        $in: ['$objectId', '$$objectives']
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                ],
-                as: 'rebacPoliciesRelatedToQOs'
-            }
-        },
-        {
-            $set: {
-                "objectives": {
-                    $cond: {
-                        if: { $eq: ['$abbreviation', 'USA'] },
-                        then: {
-                            $filter: {
-                                input: '$objectives',
-                                as: 'qo',
-                                cond: {
-                                    $not: {
-                                        $in: ['$$qo', '$rebacPoliciesRelatedToQOs.objectId']
-                                    }
-                                }
-                            }
-                        },
-                        else: '$objectives'
-                    }
-                }
-            }
-        },
-        {
-            $set: {
-                'keyControl.relatedQualityRisks': {
-                    $cond: {
-                        if: { $eq: ['$abbreviation', 'USA'] },
-                        then: {
-                            $filter: {
-                                input: { $ifNull: ['$keyControl.relatedQualityRisks', []] },
-                                as: 'qr',
-                                cond: {
-                                    $not: {
-                                        $and: [
-                                            { $eq: [{ $size: { $ifNull: ['$$qr.relatedObjectives', []] } }, 1] },
-                                            {
-                                                $in: [
-                                                    { $arrayElemAt: [{ $ifNull: ['$$qr.relatedObjectives', []] }, 0] },
-                                                    '$rebacPoliciesRelatedToQOs.objectId'
-                                                ]
-                                            }
-                                        ]
-                                    }
-                                }
-                            }
-                        },
-                        else: '$keyControl.relatedQualityRisks'
-                    }
-                }
-            }
-        },
-        {
             $lookup: {
                 from: 'documentation',
                 let: {
                     fiscalYearOfFirm: '$fiscalYear',
-                    relatedObjectives: '$objectives',
-
+                    relatedQualityRiskObjectives: {
+                        $reduce: {
+                            input: '$keyControl.relatedQualityRisks.relatedObjectives',
+                            initialValue: [],
+                            in: { $concatArrays: ['$$value', '$$this'] }
+                        }
+                    },
+                    //isQoOverrideEnabled: '$requirementcontrol.isQoOverrideEnabled',
+                    isQoOverrideEnabled: { 
+                        $cond: { if: { $and: [{ $ne: ['$keyControl.isQoOverrideEnabled', undefined] },{ $eq: ['$keyControl.isQoOverrideEnabled', true] }]},
+                          then: true,
+                          else: false}
+                    },
+                    relatedOverrideObjectives: '$keyControl.relatedObjectives',
                 },
                 pipeline: [{
                     $match: {
                         $expr: {
                             $and: [
                                 {
-                                    $eq: ["$fiscalYear", '$$fiscalYearOfFirm']
+                                    $eq: ["$fiscalYear", "$$fiscalYearOfFirm"]
                                 },
                                 {
-                                    $in: ['$uniqueId', '$$relatedObjectives']
+                                    $in: ["$uniqueId", { $cond: { if: "$$isQoOverrideEnabled", then:'$$relatedOverrideObjectives', else: "$$relatedQualityRiskObjectives"}}]
                                 }
                             ]
                         }
                     }
                 },
-                { $project: { _id: 0, qualityObjectiveId: 1, uniqueId: 1 } }],
+                { $project: { _id: 0, qualityObjectiveId: 1 } }],
                 as: 'associatedQualityObjectives'
             }
         }, {
@@ -5047,25 +4963,27 @@ try {
                             })
                                 .sort({ 'modifiedOn': -1 }).limit(1).toArray();
 
-                            // Find Updates in Control Owner/Operator Titles
-                            var current_QOs = kc.QualityObjectiveUniquesIds ? kc.QualityObjectiveUniquesIds.split(';') : [];
-                            var existing_QOs = existingControl.QualityObjectiveUniquesIds ? existingControl.QualityObjectiveUniquesIds.split(';') : [];
+                            //Find the updates in the Quality-Objective
+                            var current_QOs = kc.qualityObjectiveUniqueIdArray;
+                            var existing_QOs = existingControl.qualityObjectiveUniqueIdArray;
 
                             var differenceInQOs = [
                                 ...current_QOs.filter(qo => ! existing_QOs.includes(qo)),
                                 ...existing_QOs.filter(qo => !current_QOs.includes(qo))
                             ]
-                            var isQOUpdated = db.event.find({
-                                fiscalYear: kc.EntityFiscalYear,
-                                actor: {$in: differenceInQOs}, actorType: 'QualityObjective',
-                                message: {$in: ['ActionType_Delete','ActionType_Add']},
-                                modifiedOn: { $gt: existingControl.ArcherPublishedOn }
-                            }).sort({ 'modifiedOn': -1 }).limit(1).toArray();
-                            if (isQOUpdated.length > 0) {
-                                printjson({ "The existing control": existingControl });
-                                printjson({ "The current control": kc });
-                                isUpdateFromOutside.push(isQOUpdated[0]);
+                            if(differenceInQOs.length > 0){
+                                var isQOUpdated = db.event.find({
+                                    fiscalYear: kc.EntityFiscalYear,
+                                    actor: {$in: differenceInQOs}, actorType: 'QualityObjective',
+                                    message: {$in: ['ActionType_Delete','ActionType_Add']},
+                                    modifiedOn: { $gt: existingControl.ArcherPublishedOn }
+                                }).sort({ 'modifiedOn': -1 }).limit(1).toArray();
+                                if (isQOUpdated.length > 0) {
+                                    isUpdateFromOutside.push(isQOUpdated[0]);
+                                }
                             }
+                                                        
+                            // Find Updates in Control Owner/Operator Titles
                             var current_ControlOperatorTitleIDs = kc.ControlOperatorTitleIDs ? kc.ControlOperatorTitleIDs.split(';') : [];
                             var existing_ControlOperatorTitleIDs = existingControl.ControlOperatorTitleIDs ? existingControl.ControlOperatorTitleIDs.split(';') : [];
                             var current_ControlOwnerTitlesIDs = kc.ControlOwnerTitlesIDs ? kc.ControlOwnerTitlesIDs.split(';') : [];
@@ -5306,10 +5224,10 @@ try {
         })
 
         db.sqmarcherkeycontrol.updateMany({ FirmPublishedDate: { $lte: new Date(ISODate().getTime() - calc7Days).toISOString() } }, { $set: { EventAction: '' } });
-        // db.sqmarcherkeycontrolmaster.drop();
-        // db.sqmarcherkeycontrol.aggregate([
-        //     { $merge: { into: "sqmarcherkeycontrolmaster" } }
-        // ])
+        db.sqmarcherkeycontrolmaster.drop();
+        db.sqmarcherkeycontrol.aggregate([
+            { $merge: { into: "sqmarcherkeycontrolmaster" } }
+        ])
 
         var publishedAbbreviations = publishedEntityIds.map(function(entity) {
             return entity.abbreviation;
