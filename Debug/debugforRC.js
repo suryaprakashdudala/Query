@@ -317,7 +317,14 @@ try {
                 as: 'requirementcontrol'
             }
         }, {
-            $unwind: '$requirementcontrol'
+            $addFields: {
+                debug_requirementcontrol_all: '$requirementcontrol'
+            }
+        }, {
+            $unwind: {
+                path: '$requirementcontrol',
+                preserveNullAndEmptyArrays: true
+            }
         }, {
             $lookup: {
                 from: 'documentation',
@@ -352,11 +359,12 @@ try {
                 path: '$assignment',
                 preserveNullAndEmptyArrays: true
             }
-        }, {
+/*        }, {
             $match: {
                 'assignment': { $exists: true },
                 'assignment.status': { $ne: 'StatusType_Draft' }
             }
+*/
         }, {
             $addFields: {
                 PerformedOnBehalfOfFirmsIds: {
@@ -738,7 +746,7 @@ try {
                     }]
                 }
             }
-        }, {
+/*        }, {
             $match: {
                 $expr: {
                     $and: [{
@@ -776,6 +784,7 @@ try {
                     }]
                 }
             }
+*/
         }, {
             $lookup: {
                 from: 'documentation',
@@ -1362,7 +1371,10 @@ try {
                 qualitySubRiskUniqueIdArray: '$requirementcontrol.relatedSubRisks.uniqueId',
                 EntityFiscalYear: '$fiscalYear',
                 FiscalYear: {$concat:['FY',{$substr:['$fiscalYear',2,2]}]},                
-                IsQoOverrideEnabled: '$requirementcontrol.isQoOverrideEnabled'
+                IsQoOverrideEnabled: '$requirementcontrol.isQoOverrideEnabled',
+                DEBUG_REQ_STATUS: { $cond: { if: '$requirementcontrol', then: 'FOUND', else: 'NOT_FOUND' } },
+                DEBUG_REQ_COUNT: { $size: { $ifNull: ['$debug_requirementcontrol_all', []] } },
+                DEBUG_ASSIGN_STATUS: { $cond: { if: '$assignment', then: 'FOUND', else: 'NOT_FOUND' } }
             }
         }, {
                 $out: 'sqmarcherrequirementcontroltemp'
