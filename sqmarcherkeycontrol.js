@@ -8,7 +8,20 @@ try {
     });
 
     var autoQoNotReqFirms = 'USA';
+    autoQoNotReqFirms = autoQoNotReqFirms.split(",").map(function (entity) {
+        return entity;
+    });
+
+    // reBac Policy: Retrieve not-applicable QO IDs to filter out
     var globalQOApplicabilityPolicyId = 'EXC-GLOBAL-LOC-GLOBAL-USA';
+    var reBacPolicyQOIds = [];
+    if (globalQOApplicabilityPolicyId) {
+        reBacPolicyQOIds = db.rebacpolicy.distinct('objectId', {
+            fiscalYear: {$in: fiscalYearFilter},
+            policyId: globalQOApplicabilityPolicyId,
+            active: true
+        });
+    }
 
     var publishedEntityIds = db.firm.aggregate([{
         $match: {
@@ -18,7 +31,8 @@ try {
                     { $ne: ['$publishedDate', ''] },
                     { $and: [{ $eq: ['$isPublishQueryRun', false] }, { $or: [{ $eq: ['$isAutoPublished', true] }, { $eq: ['$isReadOnly', false] }] }] },
                     { $in: ["$fiscalYear", fiscalYearFilter] },
-                    { $or: [{ $eq: ["$isRollForwardedFromPreFY", true] }, { $eq: ["$isCreatedInCurrentFY", true] }] }                ]
+                    { $or: [{ $eq: ["$isRollForwardedFromPreFY", true] }, { $eq: ["$isCreatedInCurrentFY", true] }] }
+                ]
             }
         }
     },
@@ -1311,7 +1325,7 @@ try {
                 'objectives':
                 {
                     $cond: {
-                        if: { $eq: ['$abbreviation', 'USA'] },
+                        if: { $in: ['$abbreviation', autoQoNotReqFirms] },
                         then: {
                             $cond: {
                                 if: {
@@ -1334,43 +1348,17 @@ try {
             }
         },
         {
-            $lookup: {
-                from: 'rebacpolicy',
-                let: {
-                    firmId: '$abbreviation',
-                    objectives: '$objectives'
-                },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ['$policyId', globalQOApplicabilityPolicyId] },
-                                    { $eq: ['$$firmId', autoQoNotReqFirms] },
-                                    { $eq: ['$toEntity', '$$firmId'] },
-                                    {
-                                        $in: ['$objectId', '$$objectives']
-                                    }
-                                ]
-                            }
-                        }
-                    }
-                ],
-                as: 'rebacPoliciesRelatedToQOs'
-            }
-        },
-        {
             $set: {
                 "objectives": {
                     $cond: {
-                        if: { $eq: ['$abbreviation', autoQoNotReqFirms] },
+                        if: { $in: ['$abbreviation', autoQoNotReqFirms] },
                         then: {
                             $filter: {
                                 input: '$objectives',
                                 as: 'qo',
                                 cond: {
                                     $not: {
-                                        $in: ['$$qo', '$rebacPoliciesRelatedToQOs.objectId']
+                                        $in: ['$$qo', reBacPolicyQOIds]
                                     }
                                 }
                             }
@@ -1384,7 +1372,7 @@ try {
             $set: {
                 'requirementcontrol.relatedQualityRisks': {
                     $cond: {
-                        if: { $eq: ['$abbreviation', autoQoNotReqFirms] },
+                        if: { $in: ['$abbreviation', autoQoNotReqFirms] },
                         then: {
                             $filter: {
                                 input: {
@@ -1401,7 +1389,7 @@ try {
                                                             as: 'objId',
                                                             cond: {
                                                                 $not: {
-                                                                    $in: ['$$objId', '$rebacPoliciesRelatedToQOs.objectId']
+                                                                    $in: ['$$objId', reBacPolicyQOIds]
                                                                 }
                                                             }
                                                         }
@@ -4986,7 +4974,7 @@ try {
                                 .sort({ 'modifiedOn': -1 }).limit(1).toArray();
 
                             //Find the updates in the Quality-Objective
-                            if(kc.EntityId == autoQoNotReqFirms){
+                            if (autoQoNotReqFirms.includes(kc.EntityId)) {
                                 var current_QOs = kc.qualityObjectiveUniqueIdArray;
                                 var existing_QOs = existingControl.qualityObjectiveUniqueIdArray;
 
