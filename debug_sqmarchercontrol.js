@@ -54,20 +54,20 @@ db.firm.aggregate([
                     }
                 }
             ],
-            as: 'keyControl'
+            as: 'requirementControl'
         }
     },
-    { $unwind: '$keyControl' },
+    { $unwind: '$requirementControl' },
     // Simplified stages for debugging QualityObjectiveUniquesIds
     {
         $addFields: {
             'objectives': {
                 $cond: {
-                    if: { $not: { $or: [{ $eq: ['$keyControl.isQoOverrideEnabled', undefined] }, { $eq: ['$keyControl.isQoOverrideEnabled', ''] }, { $eq: ['$keyControl.isQoOverrideEnabled', null] }] } },
-                    then: '$keyControl.relatedObjectives',
+                    if: { $not: { $or: [{ $eq: ['$requirementControl.isQoOverrideEnabled', undefined] }, { $eq: ['$requirementControl.isQoOverrideEnabled', ''] }, { $eq: ['$requirementControl.isQoOverrideEnabled', null] }] } },
+                    then: '$requirementControl.relatedObjectives',
                     else: {
                         $reduce: {
-                            input: { $ifNull: ['$keyControl.relatedObjectives', []] },
+                            input: { $ifNull: ['$requirementControl.relatedObjectives', []] },
                             initialValue: [],
                             in: {
                                 $concatArrays: [
@@ -163,7 +163,7 @@ db.firm.aggregate([
     {
         $project: {
             _id: 0,
-            Ref_UniqueId: '$keyControl.uniqueId',
+            Ref_UniqueId: '$requirementControl.uniqueId',
             EntityId: '$abbreviation',
             FiscalYear: '$fiscalYear',
             associatedQualityObjectives: '$associatedQualityObjectives',
@@ -179,7 +179,7 @@ db.firm.aggregate([
             qualityObjectiveUniqueIdArray: {
                     $setUnion: [{
                         $reduce: {
-                            input: { $ifNull: ['$keyControl.relatedObjectives', []] },
+                            input: { $ifNull: ['$requirementControl.relatedObjectives', []] },
                             initialValue: [],
                             in: {
                                 $concatArrays: [

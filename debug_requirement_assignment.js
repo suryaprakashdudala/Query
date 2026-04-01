@@ -16,11 +16,9 @@ if (globalQOApplicabilityPolicyId) {
     });
 }
 
-print("reBacPolicyQOIds (these should be filtered out): " + JSON.stringify(reBacPolicyQOIds));
+print("reBacPolicyQOIds: " + JSON.stringify(reBacPolicyQOIds));
 
 // --- STEP 2: AGGREGATION ---
-print("Generating debug data for: " + TARGET_REF_UNIQUE_ID);
-
 db.debug_requirement_assignment_results.drop();
 
 db.firm.aggregate([
@@ -76,13 +74,35 @@ db.firm.aggregate([
         }
     },
     { $unwind: '$requirementcontrol' },
-    
-    // Simulating the QO lookup that overwrites relatedObjectives with objects
+
+    // Pre-processing to match sqmarcherkeycontrol.js state
     {
         $lookup: {
             from: 'documentation',
             let: {
-                ids: '$requirementcontrol.relatedObjectives', // Initial strings
+                riskIds: '$requirementcontrol.relatedQualityRisks',
+                fiscalYearOfFirm: '$fiscalYear'
+            },
+            pipeline: [
+                {
+                    $match: {
+                        $expr: {
+                            $and: [
+                                { $in: ['$uniqueId', { $ifNull: ['$$riskIds', []] }] },
+                                { $eq: ['$fiscalYear', '$$fiscalYearOfFirm'] }
+                            ]
+                        }
+                    }
+                }
+            ],
+            as: 'requirementcontrol.relatedQualityRisks'
+        }
+    },
+    {
+        $lookup: {
+            from: 'documentation',
+            let: {
+                ids: '$requirementcontrol.relatedObjectives',
                 fiscalYearOfFirm: '$fiscalYear'
             },
             pipeline: [
@@ -97,16 +117,14 @@ db.firm.aggregate([
                     }
                 }
             ],
-            as: 'requirementcontrol.relatedObjectives' // Now objects!
+            as: 'requirementcontrol.relatedObjectives'
         }
     },
 
-    // --- LOGIC FROM sqmarcherkeycontrol.js ---
-
-    // Stage 1: Initial objectives assignment (line 1324)
+    // --- REPLICATING logic from sqmarcherkeycontrol.js line 1324-1370 ---
     {
         $addFields: {
-            'objectives_stage_1': {
+            'objectives': {
                 $cond: {
                     if: { $in: ['$abbreviation', autoQoNotReqFirms] },
                     then: {
@@ -121,7 +139,13 @@ db.firm.aggregate([
                                 }
                             },
                             then: '$assignment.relatedObjectives',
-                            else: [] // In real script this flattens relatedQualityRisks
+                            else: {
+                                $reduce: {
+                                    input: '$requirementcontrol.relatedQualityRisks.relatedObjectives', // Array of arrays of strings
+                                    initialValue: [],
+                                    in: { $concatArrays: ['$$value', '$$this'] }
+                                }
+                            }
                         }
                     },
                     else: []
@@ -129,16 +153,19 @@ db.firm.aggregate([
             }
         }
     },
-
-    // Stage 2: reBac filtering (line 1351)
     {
         $addFields: {
-            'objectives_stage_2': {
+            'objectives_stage_1_content': '$objectives'
+        }
+    },
+    {
+        $set: {
+            "objectives": {
                 $cond: {
                     if: { $in: ['$abbreviation', autoQoNotReqFirms] },
                     then: {
                         $filter: {
-                            input: { $ifNull: ['$objectives_stage_1', []] },
+                            input: { $ifNull: ['$objectives', []] },
                             as: 'qo',
                             cond: {
                                 $not: {
@@ -147,17 +174,15 @@ db.firm.aggregate([
                             }
                         }
                     },
-                    else: '$objectives_stage_1'
+                    else: '$objectives'
                 }
             }
         }
     },
-
-    // Stage 3: Final QualityObjectiveUniquesIds calculation (similar to line 1798)
     {
         $lookup: {
             from: 'documentation',
-            let: { fiscalYearOfFirm: '$fiscalYear', relatedObjectives: '$objectives_stage_2' },
+            let: { fiscalYearOfFirm: '$fiscalYear', relatedObjectives: '$objectives' },
             pipeline: [
                 {
                     $match: {
@@ -174,18 +199,16 @@ db.firm.aggregate([
             as: 'associatedQualityObjectives'
         }
     },
-
     {
         $project: {
             _id: 0,
             EntityId: '$abbreviation',
             Ref_UniqueId: '$assignment.uniqueId',
-            isQoOverrideEnabled: '$assignment.isQoOverrideEnabled',
+            isQoOverrideEnabled_raw: '$assignment.isQoOverrideEnabled',
             is_USA: { $in: ['$abbreviation', autoQoNotReqFirms] },
-            
-            objectives_stage_1_content: '$objectives_stage_1',
-            objectives_stage_2_content: '$objectives_stage_2',
-            
+            objectives_stage_1_content: '$objectives_stage_1_content',
+            objectives_after_filter: '$objectives',
+            associatedQualityObjectives: '$associatedQualityObjectives',
             QualityObjectiveUniquesIds: {
                 $reduce: {
                     input: '$associatedQualityObjectives',
@@ -195,29 +218,9 @@ db.firm.aggregate([
             }
         }
     },
-    { $out: 'debug_requirement_assignment_results' }
+    // { $out: 'debug_requirement_assignment_results' }
 ]);
 
-print("Debug results written. Checking output...");
-var result = db.debug_requirement_assignment_results.findOne();
-if (result) {
-    print("--- DEBUG RESULT ---");
-    print("Entity: " + result.EntityId);
-    print("isQoOverrideEnabled: " + result.isQoOverrideEnabled);
-    print("Objectives after Stage 1 (Initial): " + JSON.stringify(result.objectives_stage_1_content));
-    print("Objectives after Stage 2 (reBac Filtered): " + JSON.stringify(result.objectives_stage_2_content));
-    print("Final QualityObjectiveUniquesIds: " + result.QualityObjectiveUniquesIds);
-    
-    // Check for type mismatch
-    if (result.objectives_stage_1_content && result.objectives_stage_1_content.length > 0) {
-        var firstItem = result.objectives_stage_1_content[0];
-        if (typeof firstItem === 'object') {
-            print("\nWARNING: Type Mismatch detected! objectives_stage_1 contains OBJECTS.");
-            print("Comparison with reBacPolicyQOIds (strings) will fail at Stage 2.");
-        } else {
-            print("\nOK: objectives_stage_1 contains STRINGS.");
-        }
-    }
-} else {
-    print("Error: No record found for the target filter.");
-}
+print("Debug results written.");
+// var result = db.debug_requirement_assignment_results.findOne();
+// print(JSON.stringify(result, null, 2));
