@@ -2156,7 +2156,29 @@ try {
                     db.sqmarcherkeycontrol.updateOne({ _id: kc._id }, { $set: { EventType: 'New', EventAction: 'Update', LastPublishedRecordStatus: 'Active', EventDate: getNewEventDate.length > 0 ? getNewEventDate[0].modifiedOn : '' } });
                 }
                 else if (isControlUnReject) {
-                    db.sqmarcherkeycontrol.updateOne({ _id: kc._id }, { $set: { EventType: 'Unrejected', EventAction: 'Update', LastPublishedRecordStatus: 'Active', EventDate: eventUnreject[0].modifiedOn } });
+                    var eventDate = eventUnreject[0].modifiedOn;
+                    if (autoQoNotReqFirms.includes(kc.EntityId)) {
+                        var current_QOs = kc.qualityObjectiveUniqueIdArray;
+                        var existing_QOs = existingControl.qualityObjectiveUniqueIdArray;
+
+                        var differenceInQOs = [
+                            ...current_QOs.filter(qo => ! existing_QOs.includes(qo)),
+                            ...existing_QOs.filter(qo => !current_QOs.includes(qo))
+                        ]
+                        if(differenceInQOs.length > 0){
+                            var isQOUpdated = db.event.find({
+                                fiscalYear: kc.EntityFiscalYear,
+                                actor: {$in: differenceInQOs}, actorType: 'QualityObjective',
+                                message: {$in: ['ActionType_Delete','ActionType_Add']},
+                                modifiedOn: { $gt: existingControl.ArcherPublishedOn },
+                                eventType: 'EventType_EXC_GLOBAL_LOC',
+                            }).sort({ 'modifiedOn': -1 }).limit(1).toArray();
+                            if (isQOUpdated.length > 0) {
+                                eventDate = isQOUpdated[0].modifiedOn > eventDate ? isQOUpdated[0].modifiedOn : eventDate;
+                            }
+                        }
+                    }
+                    db.sqmarcherkeycontrol.updateOne({ _id: kc._id }, { $set: { EventType: 'Unrejected', EventAction: 'Update', LastPublishedRecordStatus: 'Active', EventDate: eventDate } });
                 }
                 else if (isControlUpdate) {
                     var eventName = existingControl.EventType === 'Rejected' ? 'Unrejected' : 'Updated';
