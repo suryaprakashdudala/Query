@@ -631,6 +631,7 @@ try {
                 'requirementcontrol.executionControlFunction': { $cond: { if: '$assignment.executionControlFunction', then: '$assignment.executionControlFunction', else: '$requirementcontrol.executionControlFunction' } },
                 'requirementcontrol.relatedQualityRisks': { $cond: { if: '$assignment.relatedQualityRisks', then: '$assignment.relatedQualityRisks', else: '$requirementcontrol.relatedQualityRisks' } },
                 'requirementcontrol.relatedSubRisks': { $cond: { if: '$assignment.relatedSubRisks', then: '$assignment.relatedSubRisks', else: '$requirementcontrol.relatedSubRisks' } },
+                // 'requirementcontrol.relatedObjectives': { $cond: { if: '$assignment.relatedObjectives', then: '$assignment.relatedObjectives', else: '$requirementcontrol.relatedObjectives' } },
                 'requirementcontrol.localLanguage': { $cond: { if: '$assignment.LocalLanguage', then: '$assignment.LocalLanguage', else: '$requirementcontrol.LocalLanguage' } },
                 'requirementcontrol.additionalQOs': { $cond: { if: '$assignment.additionalQOs', then: '$assignment.additionalQOs', else: '' } },
                 'requirementcontrol.additionalQRs': { $cond: { if: '$assignment.additionalQRs', then: '$assignment.additionalQRs', else: '' } },
@@ -1332,17 +1333,17 @@ try {
                                     $not:
                                     { $or: [{ $eq: ['$requirementcontrol.isQoOverrideEnabled', undefined] }, { $eq: ['$requirementcontrol.isQoOverrideEnabled', ''] }, { $eq: ['$requirementcontrol.isQoOverrideEnabled', null] }] }
                                 },
-                                then: '$requirementcontrol.relatedObjectives',
+                                then: { $ifNull: ['$requirementcontrol.relatedObjectives.uniqueId', []] },
                                 else: {
                                     $reduce: {
-                                        input: '$requirementcontrol.relatedQualityRisks.relatedObjectives',
+                                        input: { $ifNull: ['$requirementcontrol.relatedQualityRisks.relatedObjectives', []] },
                                         initialValue: [],
                                         in: { $concatArrays: ['$$value', '$$this'] }
                                     }
                                 }
                             }
                         },
-                        else: '$requirementcontrol.relatedObjectives',
+                        else: { $ifNull: ['$requirementcontrol.relatedObjectives.uniqueId', []] },
                     }
                 }
             }
