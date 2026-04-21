@@ -1342,7 +1342,7 @@ try {
                                 }
                             }
                         },
-                        else: []
+                        else: '$requirementcontrol.relatedObjectives',
                     }
                 }
             }
