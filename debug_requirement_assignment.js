@@ -1,6 +1,6 @@
 // Config for debugging
-var TARGET_ENTITY_ID = ["USA"]; 
-var TARGET_REF_UNIQUE_ID = "RC-NTW-452"; 
+var TARGET_ENTITY_ID = ["AME"]; 
+var TARGET_REF_UNIQUE_ID = "RC-NTW-412"; 
 
 // --- STEP 1: INITIALIZE ENVIRONMENT ---
 var fiscalYearFilter = [2026];
@@ -132,13 +132,13 @@ db.firm.aggregate([
                             if: {
                                 $not: {
                                     $or: [
-                                        { $eq: ['$assignment.isQoOverrideEnabled', undefined] },
-                                        { $eq: ['$assignment.isQoOverrideEnabled', ''] },
-                                        { $eq: ['$assignment.isQoOverrideEnabled', null] }
+                                        { $eq: ['$requirementcontrol.isQoOverrideEnabled', undefined] },
+                                        { $eq: ['$requirementcontrol.isQoOverrideEnabled', ''] },
+                                        { $eq: ['$requirementcontrol.isQoOverrideEnabled', null] }
                                     ]
                                 }
                             },
-                            then: '$assignment.relatedObjectives',
+                            then: '$requirementcontrol.relatedObjectives',
                             else: {
                                 $reduce: {
                                     input: '$requirementcontrol.relatedQualityRisks.relatedObjectives', // Array of arrays of strings
@@ -148,7 +148,7 @@ db.firm.aggregate([
                             }
                         }
                     },
-                    else: []
+                    else: '$requirementcontrol.relatedObjectives',
                 }
             }
         }
