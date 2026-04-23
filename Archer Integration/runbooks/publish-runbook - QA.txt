@@ -1,0 +1,246 @@
+#FTP
+$archerCredential = Get-AutomationPSCredential -Name 'ftp_archer_cred'
+$FTPUsername  = $archerCredential.UserName
+$FTPPassword  = $archerCredential.GetNetworkCredential().Password
+#$FTPUsername = "340026"
+#$FTPPassword = "U7nxsN706r4ERD3Q"
+
+#Storage account
+$myCredential = Get-AutomationPSCredential -Name 'qa_sa_cred'
+$userName = $myCredential.UserName
+$password = $myCredential.GetNetworkCredential().Password
+$context = New-AzureStorageContext -StorageAccountName $userName -StorageAccountKey $password
+
+
+#archerentities.csv
+# download the archerentities.csv file to the temp folder in runbook
+Get-AzureStorageFileContent -ShareName sqm-azure-fileshare -Path "/publish/archerentities.csv" -Destination $env:temp -Context $context
+$filePath = Join-Path -Path $env:temp -ChildPath 'archerentities.csv'
+
+$RemoteFile = "ftp://ftp-eur.archer.rsa.com/SQMData/archerentities.csv"
+
+
+# Create FTP Request Object
+$FTPRequest = [System.Net.FtpWebRequest]::Create("$RemoteFile")
+$FTPRequest = [System.Net.FtpWebRequest]$FTPRequest
+$FTPRequest.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
+$FTPRequest.Credentials = new-object System.Net.NetworkCredential($FTPUsername, $FTPPassword)
+$FTPRequest.UseBinary = $true
+$FTPRequest.UsePassive = $true
+$FTPRequest.EnableSsl = $true
+
+
+# Read the File for Upload
+$FileContent = gc -en byte $filePath
+$FTPRequest.ContentLength = $FileContent.Length
+
+# Get Stream Request by bytes
+$Run = $FTPRequest.GetRequestStream()
+$Run.Write($FileContent, 0, $FileContent.Length)
+
+# Cleanup
+$Run.Close()
+$Run.Dispose()
+
+
+#archerusers.csv
+# download the archerentities.csv file to the temp folder in runbook
+Get-AzureStorageFileContent -ShareName sqm-azure-fileshare -Path "/publish/archerusers.csv" -Destination $env:temp -Context $context
+$filePath = Join-Path -Path $env:temp -ChildPath 'archerusers.csv'
+
+$RemoteFile = "ftp://ftp-eur.archer.rsa.com/SQMData/archerusers.csv"
+
+# Create FTP Request Object
+$FTPRequest = [System.Net.FtpWebRequest]::Create("$RemoteFile")
+$FTPRequest = [System.Net.FtpWebRequest]$FTPRequest
+$FTPRequest.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
+$FTPRequest.Credentials = new-object System.Net.NetworkCredential($FTPUsername, $FTPPassword)
+$FTPRequest.UseBinary = $true
+$FTPRequest.UsePassive = $true
+$FTPRequest.EnableSsl = $true
+
+# Read the File for Upload
+$FileContent = gc -en byte $filePath
+$FTPRequest.ContentLength = $FileContent.Length
+
+# Get Stream Request by bytes
+$Run = $FTPRequest.GetRequestStream()
+$Run.Write($FileContent, 0, $FileContent.Length)
+
+# Cleanup
+$Run.Close()
+$Run.Dispose()
+
+
+#archerfunctionsprocesses.csv
+# download the archerentities.csv file to the temp folder in runbook
+Get-AzureStorageFileContent -ShareName sqm-azure-fileshare -Path "/publish/archerfunctionsprocesses.csv" -Destination $env:temp -Context $context
+$filePath = Join-Path -Path $env:temp -ChildPath 'archerfunctionsprocesses.csv'
+
+$RemoteFile = "ftp://ftp-eur.archer.rsa.com/SQMData/archerfunctionsprocesses.csv"
+
+# Create FTP Request Object
+$FTPRequest = [System.Net.FtpWebRequest]::Create("$RemoteFile")
+$FTPRequest = [System.Net.FtpWebRequest]$FTPRequest
+$FTPRequest.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
+$FTPRequest.Credentials = new-object System.Net.NetworkCredential($FTPUsername, $FTPPassword)
+$FTPRequest.UseBinary = $true
+$FTPRequest.UsePassive = $true
+$FTPRequest.EnableSsl = $true
+
+# Read the File for Upload
+$FileContent = gc -en byte $filePath
+$FTPRequest.ContentLength = $FileContent.Length
+
+# Get Stream Request by bytes
+$Run = $FTPRequest.GetRequestStream()
+$Run.Write($FileContent, 0, $FileContent.Length)
+
+# Cleanup
+$Run.Close()
+$Run.Dispose()
+
+
+#sqmarcherkeycontrol.csv
+# download the sqmarcherkeycontrol.csv file to the temp folder in runbook
+Get-AzureStorageFileContent -ShareName sqm-azure-fileshare -Path "/publish/sqmarcherkeycontrol.csv" -Destination $env:temp -Context $context
+$filePath = Join-Path -Path $env:temp -ChildPath 'sqmarcherkeycontrol.csv'
+
+$RemoteFile = "ftp://ftp-eur.archer.rsa.com/SQMData/sqmarcherkeycontrol.csv"
+
+# Create FTP Request Object
+$FTPRequest = [System.Net.FtpWebRequest]::Create("$RemoteFile")
+$FTPRequest = [System.Net.FtpWebRequest]$FTPRequest
+$FTPRequest.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
+$FTPRequest.Credentials = new-object System.Net.NetworkCredential($FTPUsername, $FTPPassword)
+$FTPRequest.UseBinary = $true
+$FTPRequest.UsePassive = $true
+$FTPRequest.EnableSsl = $true
+
+# Read the File for Upload
+$FileContent = gc -en byte $filePath
+$FTPRequest.ContentLength = $FileContent.Length
+
+# Get Stream Request by bytes
+$Run = $FTPRequest.GetRequestStream()
+$Run.Write($FileContent, 0, $FileContent.Length)
+
+# Cleanup
+$Run.Close()
+$Run.Dispose()
+
+#sqmarcherqualityobjective.csv
+# download the sqmarcherqualityobjective.csv file to the temp folder in runbook
+Get-AzureStorageFileContent -ShareName sqm-azure-fileshare -Path "/publish/sqmarcherqualityobjective.csv" -Destination $env:temp -Context $context
+$filePath = Join-Path -Path $env:temp -ChildPath 'sqmarcherqualityobjective.csv'
+
+$RemoteFile = "ftp://ftp-eur.archer.rsa.com/SQMData/sqmarcherqualityobjective.csv"
+
+# Create FTP Request Object
+$FTPRequest = [System.Net.FtpWebRequest]::Create("$RemoteFile")
+$FTPRequest = [System.Net.FtpWebRequest]$FTPRequest
+$FTPRequest.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
+$FTPRequest.Credentials = new-object System.Net.NetworkCredential($FTPUsername, $FTPPassword)
+$FTPRequest.UseBinary = $true
+$FTPRequest.UsePassive = $true
+$FTPRequest.EnableSsl = $true
+
+# Read the File for Upload
+$FileContent = gc -en byte $filePath
+$FTPRequest.ContentLength = $FileContent.Length
+
+# Get Stream Request by bytes
+$Run = $FTPRequest.GetRequestStream()
+$Run.Write($FileContent, 0, $FileContent.Length)
+
+# Cleanup
+$Run.Close()
+$Run.Dispose()
+
+
+#sqmarcherqualityrisk.csv
+# download the sqmarcherqualityrisk.csv file to the temp folder in runbook
+Get-AzureStorageFileContent -ShareName sqm-azure-fileshare -Path "/publish/sqmarcherqualityrisk.csv" -Destination $env:temp -Context $context
+$filePath = Join-Path -Path $env:temp -ChildPath 'sqmarcherqualityrisk.csv'
+
+$RemoteFile = "ftp://ftp-eur.archer.rsa.com/SQMData/sqmarcherqualityrisk.csv"
+
+# Create FTP Request Object
+$FTPRequest = [System.Net.FtpWebRequest]::Create("$RemoteFile")
+$FTPRequest = [System.Net.FtpWebRequest]$FTPRequest
+$FTPRequest.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
+$FTPRequest.Credentials = new-object System.Net.NetworkCredential($FTPUsername, $FTPPassword)
+$FTPRequest.UseBinary = $true
+$FTPRequest.UsePassive = $true
+$FTPRequest.EnableSsl = $true
+
+# Read the File for Upload
+$FileContent = gc -en byte $filePath
+$FTPRequest.ContentLength = $FileContent.Length
+
+# Get Stream Request by bytes
+$Run = $FTPRequest.GetRequestStream()
+$Run.Write($FileContent, 0, $FileContent.Length)
+
+# Cleanup
+$Run.Close()
+$Run.Dispose()
+
+
+
+#sqmarcherresources.csv
+# download the sqmarcherqualityrisk.csv file to the temp folder in runbook
+Get-AzureStorageFileContent -ShareName sqm-azure-fileshare -Path "/publish/sqmarcherresources.csv" -Destination $env:temp -Context $context
+$filePath = Join-Path -Path $env:temp -ChildPath 'sqmarcherresources.csv'
+
+$RemoteFile = "ftp://ftp-eur.archer.rsa.com/SQMData/sqmarcherresources.csv"
+
+# Create FTP Request Object
+$FTPRequest = [System.Net.FtpWebRequest]::Create("$RemoteFile")
+$FTPRequest = [System.Net.FtpWebRequest]$FTPRequest
+$FTPRequest.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
+$FTPRequest.Credentials = new-object System.Net.NetworkCredential($FTPUsername, $FTPPassword)
+$FTPRequest.UseBinary = $true
+$FTPRequest.UsePassive = $true
+$FTPRequest.EnableSsl = $true
+
+# Read the File for Upload
+$FileContent = gc -en byte $filePath
+$FTPRequest.ContentLength = $FileContent.Length
+
+# Get Stream Request by bytes
+$Run = $FTPRequest.GetRequestStream()
+$Run.Write($FileContent, 0, $FileContent.Length)
+
+# Cleanup
+$Run.Close()
+$Run.Dispose()
+
+#sqmarchertitleassignments.csv
+# download the sqmarchertitleassignments.csv file to the temp folder in runbook
+Get-AzureStorageFileContent -ShareName sqm-azure-fileshare -Path "/publish/sqmarchertitleassignments.csv" -Destination $env:temp -Context $context
+$filePath = Join-Path -Path $env:temp -ChildPath 'sqmarchertitleassignments.csv'
+
+$RemoteFile = "ftp://ftp-eur.archer.rsa.com/SQMData/sqmarchertitleassignments.csv"
+
+# Create FTP Request Object
+$FTPRequest = [System.Net.FtpWebRequest]::Create("$RemoteFile")
+$FTPRequest = [System.Net.FtpWebRequest]$FTPRequest
+$FTPRequest.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
+$FTPRequest.Credentials = new-object System.Net.NetworkCredential($FTPUsername, $FTPPassword)
+$FTPRequest.UseBinary = $true
+$FTPRequest.UsePassive = $true
+$FTPRequest.EnableSsl = $true
+
+# Read the File for Upload
+$FileContent = gc -en byte $filePath
+$FTPRequest.ContentLength = $FileContent.Length
+
+# Get Stream Request by bytes
+$Run = $FTPRequest.GetRequestStream()
+$Run.Write($FileContent, 0, $FileContent.Length)
+
+# Cleanup
+$Run.Close()
+$Run.Dispose()
+

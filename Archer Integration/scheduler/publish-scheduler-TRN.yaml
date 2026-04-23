@@ -1,0 +1,72 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: publish-schedule
+  namespace: "sqm-k8s0mi-uat"
+spec:
+  schedule: "0 1,13 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          securityContext:
+            supplementalGroups:
+              - 9999
+            runAsNonRoot: true
+            fsGroup: 9999
+          containers:
+          - image: mongo:7.0
+            name: publish-schedule
+            securityContext:
+              runAsUser: 999
+              runAsGroup: 9999
+            resources:
+              limits:
+                cpu: 1000m
+                memory: 4Gi
+              requests:
+                cpu: 50m
+                memory: 2Gi
+            env:
+            - name: MongoUser
+              valueFrom:
+                secretKeyRef:
+                  name: mongo
+                  key: user
+            - name: MongoPassword
+              valueFrom:
+                secretKeyRef:
+                  name: mongo
+                  key: password
+            - name: FiscalYear
+              value: "2024"
+            - name: Connection
+              value: "--host global/isqc1-db-0.isqc1-db.sqm-k8s0mi-uat.svc.cluster.local:27017,isqc1-db-1.isqc1-db.sqm-k8s0mi-uat.svc.cluster.local:27017,isqc1-db-2.isqc1-db.sqm-k8s0mi-uat.svc.cluster.local:27017 -u $MongoUser -p $MongoPassword  --authenticationDatabase admin"           
+            command: ["/bin/sh"]
+            args: ["-c", "mongosh $(Connection) /publish/scripts/BKCC_Lock_Scenario_Insert_records_for_Pending_Assignments.js
+                   && mongosh $(Connection) /publish/scripts/NotificationsBatchJob.js
+                   && mongosh $(Connection) /publish/scripts/Sqm_Archer_Control_Owner_Operator_Query.js && mongoexport $(Connection) -d isqc --collection sqmcontrolownersoperators  --type=csv --fields=UserName,Email,FiscalYear,UserGroup --out /publish/sqmcontrolownersoperators.csv
+                   && mongosh $(Connection) /publish/scripts/Archer_Master_Data_Process_Query.js && mongoexport $(Connection) -d isqc --collection masterDataProcess --type=csv --fields=UniqueId,ProcessName,ProcessDescription,FiscalYear,EventType,EventAction,LastPublishedRecordStatus,EventDate,LastProcessedDate,PCAOB_Configured_Object --out /publish/masterDataProcess.csv
+                   && mongosh $(Connection) /publish/scripts/Archer_Master_Data_Functions.js && mongoexport $(Connection) -d isqc --collection masterDataFunction --type=csv --fields=FunctionId,FunctionName,FiscalYear,EventType,EventAction,LastPublishedRecordStatus,EventDate,LastFlagProcessedDate --out /publish/masterDataFunction.csv
+                   && mongosh $(Connection) /publish/scripts/Sqm_Archer_AEC_Leadership.js && mongoexport $(Connection) -d isqc --collection SQMLeadershipRoles --type=csv --fields=UserName,Email,FiscalYear --out /publish/sqmleadershiproles.csv
+                   && mongosh $(Connection) /publish/scripts/Sqm_Archer_KeyControl_IECs.js && mongoexport $(Connection) -d isqc --collection sqmarcherkeycontrol_iec --type=csv --fields=UniqueControlId,EntityId,ControlName,FiscalYear,IECId,IEC,IpeSystemsApplicable,IsThisIECReportOrOther,IECReportType,ControlOwnerProceduresOverCompleteness,ControlOwnerProceduresOverCompletenessLocal,IECRationale,IECRationaleLocal,IECSystems,IECLocal --out /publish/sqmarcherkeycontroliec.csv
+                   && mongosh $(Connection) /publish/scripts/Sqm_Archer_Documentation_Query.js 
+                   && mongoexport $(Connection) -d isqc --collection=sqmarcherkeycontrol --type=csv --fields=UniqueControlID,EntityId,NetworkId,AreaId,RegionId,ClusterId,SubClusterId,MemberFirmId,EntityType,ControlName,ControlDescription,ControlType,ControlNature,Frequency,ControlOwnerTitles,ControlOwnerTitleAssignments,ControlOperatorTitles,ControlOperatorTitleAssignments,FunctionId,FunctionName,FunctionOwnerTitle,FunctionOwnerAssignments,ProcessUniqueId,ControlObjective,QualityObjectiveUniquesIds,ActiveQualityRiskUniqueIds,IECSystems,IsControlOverResource,ResourceType,ResourceName,ServiceLine,ControlCriteria,SupportingITApplication,IEC,IECReportType,IsThisIECReportOrOther,ControlOwnerProceduresOverCompleteness,ControlOwnerProceduresOverCompletenessLocal,IECRationale,IECRationaleLocal,SupportingEvidence,ControlDesignedByType,ControlDesignedByName,ExecutingEntity,PerformedOnBehalfOf,FiscalYear,FunctionBaselineControlDesign,FunctionBaselineLocalControlDesign,FunctionBaselineControlExecution,ResourceIds,RelatedPolicyProcedureManualGuidance,KeyControlOperatedByServiceProvider,ServiceProviderName,EngagementType,Tags,ActiveQualitySubRiskUniqueIds,LocalLanguage,ControlNameLocal,ControlDescriptionLocal,ServiceProviderNameLocal,ControlObjectiveLocal,ControlCriteriaLocal,IECLocal,SupportingEvidenceLocal,IsControlOverResourceNew,KeyControlOperatedByServiceProviderNew,EventType,EventAction,LastPublishedRecordStatus,RejectedQualityRiskUniqueIds,RejectedSubQualityRiskUniqueIds,EventDate,FirmPublishedDate,LastProcessedDate,IECIDs --out /publish/sqmarcherkeycontrol.csv
+                   && mongoexport $(Connection) -d isqc --collection=sqmarcherqualityrisk --type=csv --fields=QualityRiskUniqueId,EntityId,NetworkId,AreaId,RegionId,ClusterId,SubClusterId,MemberFirmId,EntityType,QualityRiskName,QualityRiskDescription,QualityObjectiveUniqueIds,FiscalYear,EventType,EventAction,LastPublishedRecordStatus,EventDate,FirmPublishedDate,LastProcessedDate --out /publish/sqmarcherqualityrisk.csv
+                   && mongoexport $(Connection) -d isqc --collection=sqmarchersubrisk --type=csv --fields=QualitySubRiskUniqueId,EntityId,NetworkId,AreaId,RegionId,ClusterId,SubClusterId,MemberFirmId,EntityType,QualitySubRiskName,QualitySubRiskDescription,QualityRiskId,FiscalYear,EventType,EventAction,LastPublishedRecordStatus,EventDate,FirmPublishedDate,LastProcessedDate --out /publish/sqmarchersubrisk.csv
+                   && mongoexport $(Connection) -d isqc --collection=sqmarcherqualityobjective --type=csv --fields=QualityObjectiveID,EntityId,NetworkId,AreaId,RegionId,ClusterId,SubClusterId,MemberFirmId,EntityType,QualityObjectiveName,QualityObjectiveDescription,Component,FiscalYear,EventType,EventAction,LastPublishedRecordStatus,EventDate,FirmPublishedDate,LastProcessedDate --out /publish/sqmarcherqualityobjective.csv
+                   && mongoexport $(Connection) -d isqc --collection=sqmarcherresources --type=csv --fields=UniqueId,ResourceType,Name,Description,EntityId,EntityType,ResourceCategory,Function/SL,TechnologyFunction,TypeOfEngagements,ServiceLineToWhichThisResourceApplies,CommunicationMethod,IsResourceProvidedByService,NameOfServiceProvider,RelatedQualityRisks,LinkToResource,LinkToUserGuide,Tags,FiscalYear,EventType,EventAction,LastPublishedRecordStatus,EventDate,FirmPublishedDate,MultiFunction/SL,MultiTechnologyFunction,CategoryServiceProvider --out /publish/sqmarcherresources.csv
+                   && mongoexport $(Connection) -d isqc --collection=sqmarcherfunction --type=csv --fields=UniqueRowId,FunctionId,EntityFunctionId,EntityId,NetworkId,AreaId,BusinessUnitId,ClusterId,SubClusterId,MemberFirmId,EntityType,FunctionName,FunctionLeaderTitle,FunctionLeaderTitleAssignment,FiscalYear,FunctionLeaderTitleAssignmentDisplayName,EventType,EventAction,LastPublishedRecordStatus,EventDate,FirmPublishedDate,LastProcessedDate,RegionId --out /publish/sqmArcherFunctionLeader.csv
+                   && mongosh $(Connection) /publish/scripts/Sqm_Archer_Entities_Query.js && mongoexport $(Connection) -d isqc --collection archerentities  --type=csv --fields=Type,EYNetworkUniqueId,EYNetwork,EYAreaUniqueId,EYArea,EYBusinessUnitUniqueId,EYBusinessUnit,EYClusterUniqueId,EYCluster,EYSubClusterUniqueId,EYSubCluster,GroupNetworkUniqueId,GroupNetwork,GroupAreaUniqueId,GroupArea,GroupBusinessUnitUniqueId,GroupBusinessUnit,GroupClusterUniqueId,GroupCluster,GroupSubClusterUniqueId,GroupSubCluster,Name,IsPartOfGroup,GroupName,GcdId,Abbreviation,Location,UltimateResponsibilitySqmTitle,UltimateResponsibilitySqmAssignments,OperationalResponsibilitySqmTitle,OperationalResponsibilitySqmAssignments,OperationalResponsibilityComplianceWithRequirementTitle,OperationalResponsibilityComplianceWithRequirementAssignments,OperationalResponsibilityMonitoringAndRemediationTitle,OperationalResponsibilityMonitoringAndRemediationAssignments,UltimateResponsibilitySqmAssignmentsName,OperationalResponsibilitySqmAssignmentsName,OperationalResponsibilityComplianceWithRequirementAssignmentsName,OperationalResponsibilityMonitoringAndRemediationAssignmentsName,SQMLeadership,FiscalYear,FirmPublishedDate,Archived,MemberFirmId,FirstFirmPublishedDate,Rollforwarded,Published,RollforwardedDate,ArchivedDate,EventType,EventAction,LastPublishedRecordStatus,EventDate,PCAOBRegistered,UltimateResponsibilityQCTitle,UltimateResponsibilityQCassignments,UltimateResponsibilityQCassignmentsName,OperationalResponsiblityQCTitle,OperationalResponsiblityQCassignments,OperationalResponsiblityQCassignmentsName,OperationalResponsibilityComplianceWithRequirementQCTitle,OperationalResponsibilityComplianceWithRequirementQCAssignments,OperationalResponsibilityComplianceWithRequirementQCAssignmentsName,OperationalResponsibilityMonitoringAndRemediationQCTitle,OperationalResponsibilityMonitoringAndRemediationQCAssignments,OperationalResponsibilityMonitoringAndRemediationQCAssignmentsName,IndividualOperationalResponsibilityQCGovernanceAndLeadershipTitle,IndividualOperationalResponsibilityQCGovernanceAndLeadershipAssignments,IndividualOperationalResponsibilityQCGovernanceAndLeadershipAssignmentsName,IndividualOperationalResponsibilityQCAcceptanceAndContinuanceOfEngagementsTitle,IndividualOperationalResponsibilityQCAcceptanceAndContinuanceOfEngagementsAssignments,IndividualOperationalResponsibilityQCAcceptanceAndContinuanceOfEngagementsAssignmentsName,IndividualOperationalResponsibilityQCEngagementPerformanceTitle,IndividualOperationalResponsibilityQCEngagementPerformanceAssignments,IndividualOperationalResponsibilityQCEngagementPerformanceAssignmentsName,IndividualOperationalResponsibilityQCResourcesTitle,IndividualOperationalResponsibilityQCResourcesAssignments,IndividualOperationalResponsibilityQCResourcesAssignmentsName,IndividualOperationalResponsibilityQCInformationAndCommunicationTitle,IndividualOperationalResponsibilityQCInformationAndCommunicationAssignments,IndividualOperationalResponsibilityQCInformationAndCommunicationAssignmentsName,SQMPCAOBLeadership,EYRegionUniqueId,EYRegion,GroupRegionUniqueId,GroupRegion --out /publish/archerentities.csv"]
+            volumeMounts:
+              - name: azure-file-share
+                mountPath: /publish
+                subPath: publish
+          volumes:
+            - name: azure-file-share
+              persistentVolumeClaim:
+                claimName: sqm-azure-fileshare-pvc          
+          restartPolicy: Never 
+          imagePullSecrets:
+            - name: acrsecret          
+      backoffLimit: 2

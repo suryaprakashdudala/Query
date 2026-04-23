@@ -1,0 +1,289 @@
+#Storage account
+$myCredential = Get-AutomationPSCredential -Name 'sa_cred'
+$userName = $myCredential.UserName
+$password = $myCredential.GetNetworkCredential().Password
+$context = New-AzureStorageContext -StorageAccountName $userName -StorageAccountKey $password
+
+
+#archerusers.csv
+
+#region begin Archer Global Variables
+        #region begin DEV Environment variables
+ 
+        $AdminRoleId = 154 #'ISQM: Archer Global Admin'
+        $SQMAdminGroupID=190 #'SQM Admin'
+        $SQMEditGroupID=191 #'SQM Editor'
+        $SQMViewGroupID=192 #'SQM View Only'
+        $BaseURL = "https://ey-dev2.archer.rsa.com"
+        #endregion
+#endregion 
+
+#Push users
+$archerCred = Get-AutomationPSCredential -Name 'archer_cred'
+$archer_username = $archerCred.UserName
+$archer_password = $archerCred.GetNetworkCredential().Password
+
+
+$headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+$headers.Add("Accept", "application/json")
+$headers.Add("Content-Type", "application/json")
+$body = "{
+`n`"InstanceName`":`"340026`",
+`n`"Username`":`"$archer_username`",
+`n`"Password`":`"$archer_password`"
+`n}"
+#$body
+
+$response = Invoke-RestMethod $BaseURL'/platformapi/core/security/login' -Method 'POST' -Headers $headers -Body $body
+$response | ConvertTo-Json
+
+$SessionToken = $Response.RequestedObject.SessionToken
+
+#Storage account
+$myCredential = Get-AutomationPSCredential -Name 'sa_cred'
+$userName = $myCredential.UserName
+$password = $myCredential.GetNetworkCredential().Password
+$context = New-AzureStorageContext -StorageAccountName $userName -StorageAccountKey $password
+
+# Import Ctrl Owner/Operator Users
+Get-AzureStorageFileContent -ShareName sqm-azure-fileshare -Path "/publish/sqmcontrolownersoperators.csv" -Destination $env:temp -Context $context
+
+$filePath = Join-Path -Path $env:temp -ChildPath 'sqmcontrolownersoperators.csv'
+  
+Import-Csv $filePath | ForEach-Object {
+    
+    $username = [string]($_.userName)
+    $userEmail = [string]($_.email)  
+    #region begin Get Existing User ID       
+    $header1 = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+    $header1.Add("Accept", "application/json")
+    $header1.Add("Content-Type", "application/json")
+    $header1.Add("Authorization", "Archer session-id=`"" + $SessionToken + "`"")
+    $header1.Add("X-Http-Method-Override", "GET")
+    $url = $BaseURL + "/platformapi/core/system/user/?`$filter=UserName eq '$userEmail'"
+    #$url
+    $response = Invoke-RestMethod -Uri $url -Headers $header1 -ContentType "application/json" -Method POST #-Body $body
+
+    $ExUserId = ($response.RequestedObject.Id)
+    If ([string]::IsNullOrEmpty($ExUserId)) {
+        
+        #Write-Host("New User Entered")      
+        $UserNameArray = $username.Split(" ")
+	    [string]$UserFirstName = ""
+        For ($i = 0; $i -le $UserNameArray.Length - 2; $i++) {
+            $UserFirstName = $UserFirstName + " " + $UserNameArray[$i]
+        }
+        $UserFirstName = $UserFirstName.Trim()
+        [string]$UserLastName = $UserNameArray[$UserNameArray.Length - 1]
+        $UserLastName = ($UserLastName.ToString()).Trim()
+        $body = "{
+                        `n	`"User`":
+                        `n	{
+                        `n		`"FirstName`":`"$UserFirstName`",
+                        `n		`"LastName`":`"$UserLastName`",
+                        `n      `"Username`":`"$userEmail`",
+                        `n      `"email`":`"$userEmail`",
+                        `n    `"Contacts`": [
+                        `n        {
+                        `n            `"ContactType`": 7,
+                        `n            `"ContactSubType`": 2,
+                        `n            `"Value`": `"ankit.malik1@ey.com`",
+                        `n            `"IsDefault`": true
+                        `n        }
+                        `n    ],
+                        `n	`"Password`":`"Archer2021!`"
+                        `n}
+                        `n"
+                
+        $response = Invoke-RestMethod -Uri $BaseURL'/platformapi/core/system/user' -Headers $header1 -ContentType 'application/json ; charset=utf-8' -Method Post -Body $body        
+    } 
+
+}
+Write-Host("Completed Ctrl Owner") 
+
+Get-AzureStorageFileContent -ShareName sqm-azure-fileshare -Path "/publish/archerusers.csv" -Destination $env:temp -Context $context
+
+$filePath = Join-Path -Path $env:temp -ChildPath 'archerusers.csv'
+
+Write-Host("Loaded ArcherUsers") 
+Import-Csv $filePath | ForEach-Object {
+
+    $username = $_.UserName
+    $userEmail = $_.Email   
+  
+    #region begin Get Existing User ID       
+    $header1 = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+    $header1.Add("Accept", "application/json")
+    $header1.Add("Content-Type", "application/json")
+    $header1.Add("Authorization", "Archer session-id=`"" + $SessionToken + "`"")
+    $header1.Add("X-Http-Method-Override", "GET")
+    $url = $BaseURL + "/platformapi/core/system/user/?`$filter=UserName eq '$userEmail'"
+    $response = Invoke-RestMethod -Uri $url -Headers $header1 -ContentType 'application/json ; charset=utf-8' -Method POST #-Body $body
+    $ExUserId = ($response.RequestedObject.Id)
+    #endregion
+  
+    $IsAdd = "false"
+    If ([string]::IsNullOrEmpty($ExUserId)) {
+        #region begin - Create New User
+        $UserNameArray = $username.Split(" ")
+        $UserFirstName = ""
+        For ($i = 0; $i -le $UserNameArray.Length - 2; $i++) {
+            $UserFirstName = $UserFirstName + " " + $UserNameArray[$i]
+        }
+
+        $UserLastName = $UserNameArray[$UserNameArray.Length - 1]
+        $UserFirstName = $UserFirstName.Trim()
+        $UserLastName = ($UserLastName.ToString()).Trim()
+
+        $body = "{
+                `n	`"User`":
+                `n	{
+                `n		`"FirstName`":`"$UserFirstName`",
+                `n		`"LastName`":`"$UserLastName`",
+                `n      `"Username`":`"$userEmail`",
+                `n      `"email`":`"$userEmail`",
+                `n      `"Contacts`": [
+                `n        {
+                `n            `"ContactType`": 7,
+                `n            `"ContactSubType`": 2,
+                `n            `"Value`": `"ankit.malik1@ey.com`",
+                `n            `"IsDefault`": true
+                `n        }
+                `n    ],
+                `n	`"Password`":`"Archer2021!`"
+                `n}
+                `n"
+
+        #$body           
+        $response = Invoke-RestMethod -Uri $BaseURL'/platformapi/core/system/user' -Headers $header1 -ContentType 'application/json ; charset=utf-8' -Method Post -Body $body 
+        #$response.RequestedObject       
+
+        $NewUserId = $response.RequestedObject.Id
+        #$NewUserId
+                    
+        if (($_.GlobalAccess).ToUpper() -eq "YES") {
+            $userrole = $AdminRoleId  #"ISQM: Archer Global Admin" 
+            $IsAdd = "true"
+        }             
+        
+        $Rolebody = '{
+            "UserId":"' + $NewUserId + '",
+            "RoleID":"' + $userrole + '",
+            "IsAdd":"' + $IsAdd + '",
+        }'
+
+        $response1 = Invoke-RestMethod -Uri $BaseURL'/platformapi/core/system/userrole' -Headers $headers -ContentType 'application/json ; charset=utf-8' -Method PUT -Body $Rolebody 
+        #----------
+       
+        if (($_.Permission).ToUpper() -eq "ADMIN") {
+            $UserGroup = $SQMAdminGroupID  #"SQM Admin"
+            $IsAdd = "true"                                
+
+            $Groupbody = '{
+                "UserId":"' + $NewUserId + '",
+                "GroupId":"' + $UserGroup + '",
+                "IsAdd":"' + $IsAdd + '",
+            }'
+
+            $response2 = Invoke-RestMethod -Uri $BaseURL'/platformapi/core/system/usergroup' -Headers $headers -ContentType 'application/json ; charset=utf-8' -Method PUT -Body $Groupbody 
+		}  
+
+        if (($_.Permission).ToUpper() -eq "EDIT") {
+            $UserGroup = $SQMEditGroupID  #"SQM Editor"
+            $IsAdd = "true"                                
+
+            $Groupbody = '{
+                "UserId":"' + $NewUserId + '",
+                "GroupId":"' + $UserGroup + '",
+                "IsAdd":"' + $IsAdd + '",
+            }'
+
+            $response2 = Invoke-RestMethod -Uri  $BaseURL'/platformapi/core/system/usergroup' -Headers $headers -ContentType 'application/json ; charset=utf-8' -Method PUT -Body $Groupbody 
+
+        }    
+
+        if (($_.Permission).ToUpper() -eq "READ ONLY") {
+            $UserGroup = $SQMViewGroupID  #"ISQM View Only"
+            $IsAdd = "true"                                
+            $Groupbody = '{
+                "UserId":"' + $NewUserId + '",
+                "GroupId":"' + $UserGroup + '",
+                "IsAdd":"' + $IsAdd + '",
+            }'
+
+            $response2 = Invoke-RestMethod -Uri  $BaseURL'/platformapi/core/system/usergroup' -Headers $headers -ContentType 'application/json ; charset=utf-8' -Method PUT -Body $Groupbody 
+		}              
+        #endregion
+    } 
+    else {
+        #region begin - Update Existing User
+        #Write-Host("Existing User Entered")
+        $headers = @{ 
+            'Accept'        = 'application/json'
+            'Content-Type'  = 'application/json'
+            'Authorization' = 'Archer session-id="' + $SessionToken + '"'
+        }
+
+        if (($_.GlobalAccess).ToUpper() -eq "YES") {
+            $ExUserRoleId = $AdminRoleId  #"ISQM: Archer Global Admin"
+            $IsAdd = "true"                                
+        }                             
+         
+        $Rolebody = '{
+            "UserId":"' + $ExUserId + '",
+            "RoleID":"' + $ExUserRoleId + '",
+            "IsAdd":"' + $IsAdd + '"
+        }'
+
+        $response1 = Invoke-RestMethod -Uri $BaseURL'/platformapi/core/system/userrole' -Headers $headers -ContentType 'application/json ; charset=utf-8' -Method PUT -Body $Rolebody 
+        #$response1 | ConvertTo-Json
+        #----------
+        
+        if (($_.Permission).ToUpper() -eq "ADMIN") {
+            $UserGroup = $SQMAdminGroupID  #"SQM Admin"
+            $IsAdd = "true"                                
+
+            $Groupbody = '{
+                "UserId":"' + $ExUserId + '",
+                "GroupId":"' + $UserGroup + '",
+                "IsAdd":"' + $IsAdd + '",
+            }'
+
+            $response2 = Invoke-RestMethod -Uri $BaseURL'/platformapi/core/system/usergroup' -Headers $headers -ContentType 'application/json ; charset=utf-8' -Method PUT -Body $Groupbody 
+            #$response2.RequestedObject
+
+        }  
+
+        if (($_.Permission).ToUpper() -eq "EDIT") {
+            $UserGroup = $SQMEditGroupID  #"SQM Editor"
+            $IsAdd = "true"                                
+
+            $Groupbody = '{
+                "UserId":"' + $ExUserId + '",
+                "GroupId":"' + $UserGroup + '",
+                "IsAdd":"' + $IsAdd + '",
+            }'
+
+            $response2 = Invoke-RestMethod -Uri $BaseURL'/platformapi/core/system/usergroup' -Headers $headers -ContentType 'application/json ; charset=utf-8' -Method PUT -Body $Groupbody 
+            # $response2.RequestedObject
+
+        }    
+
+        if (($_.Permission).ToUpper() -eq "READ ONLY") {
+            $UserGroup = $SQMViewGroupID  #"ISQM View Only"
+            $IsAdd = "true"                                
+            $Groupbody = '{
+                "UserId":"' + $ExUserId + '",
+                "GroupId":"' + $UserGroup + '",
+                "IsAdd":"' + $IsAdd + '",
+            }'
+
+        	$response2 = Invoke-RestMethod -Uri $BaseURL'/platformapi/core/system/usergroup' -Headers $headers -ContentType 'application/json ; charset=utf-8' -Method PUT -Body $Groupbody 
+        	#$response2.RequestedObject
+        }    
+        
+        #-----------
+        #endregion              
+    }
+       
+}

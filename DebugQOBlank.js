@@ -2,7 +2,7 @@
 db.firm.aggregate([
   {
     $match: {
-      abbreviation: { $ne: 'USA' }, // Focus on non-USA firms as reported
+      abbreviation: { $eq: 'AME' }, // Focus on non-USA firms as reported
       fiscalYear: 2026               // Update if using a different FY
     }
   },
@@ -65,5 +65,5 @@ db.firm.aggregate([
           ]
       }
   }},
-  { $match: { IsDataMissingInOriginalScript: true } } // Show only records that were failing
+  // { $match: { IsDataMissingInOriginalScript: true } } // Show only records that were failing
 ]);

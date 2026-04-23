@@ -1,0 +1,64 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: archer-filecopy-schedule
+spec:
+  schedule: "30 0,12 * * *"
+  jobTemplate:
+    spec:
+      template:  
+        spec:
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 100
+            fsGroup: 101
+          containers:
+          - image: sqmacr.azurecr.io/curl:7.82.0
+            name: archer-filecopy-schedule
+            resources:
+              limits:
+                cpu: 1
+                memory: 512Mi
+              requests:
+                cpu: 30m
+                memory: 256Mi            
+            command: ["/bin/sh"]
+            env:
+            - name: ArcherSftp
+              valueFrom:
+                configMapKeyRef:                  
+                  key: ArcherSftp                               
+                  name: web-env
+            - name: Password
+              valueFrom:
+                secretKeyRef:
+                  name: archer-sftp-creds
+                  key: password  
+            - name: User
+              valueFrom:
+                secretKeyRef:
+                  name: archer-sftp-creds
+                  key: user
+            args: ["-c", 'curl -k $ArcherSftp --user $User:$Password -T "/publish/archerentities.csv"
+                   && curl -k $ArcherSftp --user $User:$Password -T "/publish/masterDataProcess.csv"
+                   && curl -k $ArcherSftp --user $User:$Password -T "/publish/masterDataFunction.csv"
+                   && curl -k $ArcherSftp --user $User:$Password -T "/publish/sqmarcherkeycontrol.csv"
+                   && curl -k $ArcherSftp --user $User:$Password -T "/publish/sqmarcherqualityobjective.csv"
+                   && curl -k $ArcherSftp --user $User:$Password -T "/publish/sqmarcherqualityrisk.csv"
+                   && curl -k $ArcherSftp --user $User:$Password -T "/publish/sqmarchersubrisk.csv"
+                   && curl -k $ArcherSftp --user $User:$Password -T "/publish/sqmarcherresources.csv"
+                   && curl -k $ArcherSftp --user $User:$Password -T "/publish/sqmArcherFunctionLeader.csv"
+                   && curl -k $ArcherSftp --user $User:$Password -T "/publish/sqmleadershiproles.csv"
+                   && curl -k $ArcherSftp --user $User:$Password -T "/publish/sqmarcherkeycontroliec.csv"']
+            volumeMounts:
+              - name: azure-file-share
+                mountPath: /publish
+                subPath: publish
+          volumes:
+            - name: azure-file-share
+              persistentVolumeClaim:
+                claimName: sqm-azure-fileshare-pvc          
+          restartPolicy: Never 
+          imagePullSecrets:
+            - name: acrsecret                   
+      backoffLimit: 3

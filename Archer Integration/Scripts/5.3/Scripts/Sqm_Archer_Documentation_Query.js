@@ -1,46 +1,32 @@
 try {
-    // db = db.getSiblingDB('isqc');
+    db = db.getSiblingDB('isqc');
 
-    var fiscalYearFilter = "2026";
+    var fiscalYearFilter = process.env.FiscalYears;
 
     fiscalYearFilter = fiscalYearFilter.split(",").map(function (year) {
         return parseInt(year, 10);
     });
-
-    var autoQoNotReqFirms = 'USA';
-    autoQoNotReqFirms = autoQoNotReqFirms.split(",").map(function (entity) {
-        return entity;
-    });
-
-    // reBac Policy: Retrieve not-applicable QO IDs to filter out
-    var globalQOApplicabilityPolicyId = 'EXC-GLOBAL-LOC-GLOBAL-USA';
-    var reBacPolicyQOIds = [];
-    if (globalQOApplicabilityPolicyId) {
-        reBacPolicyQOIds = db.rebacpolicy.distinct('objectId', {
-            fiscalYear: {$in: fiscalYearFilter},
-            policyId: globalQOApplicabilityPolicyId,
-            active: true
-        });
-    }
-
-    var publishedEntityIds = [ 
-        { abbreviation: 'AME', fiscalYear: 2026 },
-        // { abbreviation: 'AU', fiscalYear: 2026 }, 
-        { abbreviation: 'NZ', fiscalYear: 2026 },
-        // { abbreviation: 'ASR', fiscalYear: 2026 },
-        { abbreviation: 'BH', fiscalYear: 2026 },
-        // { abbreviation: 'zloc1', fiscalYear: 2026 },
-        // { abbreviation: 'zreg1', fiscalYear: 2026 },
-        // { abbreviation: 'zreg2', fiscalYear: 2026 },
-        // { abbreviation: 'zarea', fiscalYear: 2026 },
-        // { abbreviation: 'zcls1', fiscalYear: 2026 },
-        // { abbreviation: 'PBITR', fiscalYear: 2026 },
-        // { abbreviation: 'PBIBU', fiscalYear: 2026 },
-        // { abbreviation: 'PBISC', fiscalYear: 2026 },
-        // { abbreviation: 'PBITL', fiscalYear: 2026 },
-        { abbreviation: 'A05', fiscalYear: 2026 },
-        // { abbreviation: 'AME', fiscalYear: 2027 },
-    ]
+    
+    var publishedEntityIds = db.firm.aggregate([{
+        $match: {
+            $expr: {
+                $and: [
+                    '$publishedDate',
+                    { $ne: ['$publishedDate', ''] },
+                    { $and: [{ $eq: ['$isPublishQueryRun', false] }, { $or: [{ $eq: ['$isAutoPublished', true] }, { $eq: ['$isReadOnly', false] }] }] },
+                    { $in: ["$fiscalYear", fiscalYearFilter] },
+                    { $or: [{ $eq: ["$isRollForwardedFromPreFY", true] }, { $eq: ["$isCreatedInCurrentFY", true] }] }
+                ]
+            }
+        }
+    },
+    {
+        $project: {
+            abbreviation: 1,
+            fiscalYear:1,
+            _id: 0
+        }
+    }]).toArray(); // [ { abbreviation: 'AME', fiscalYear: 2025 },{ abbreviation: 'EME', fiscalYear: 2026 } ]
     if (!publishedEntityIds || publishedEntityIds.length === 0) {
         print("No published entities found.");
     } else {
@@ -629,7 +615,6 @@ try {
                 'requirementcontrol.executionControlFunction': { $cond: { if: '$assignment.executionControlFunction', then: '$assignment.executionControlFunction', else: '$requirementcontrol.executionControlFunction' } },
                 'requirementcontrol.relatedQualityRisks': { $cond: { if: '$assignment.relatedQualityRisks', then: '$assignment.relatedQualityRisks', else: '$requirementcontrol.relatedQualityRisks' } },
                 'requirementcontrol.relatedSubRisks': { $cond: { if: '$assignment.relatedSubRisks', then: '$assignment.relatedSubRisks', else: '$requirementcontrol.relatedSubRisks' } },
-                // 'requirementcontrol.relatedObjectives': { $cond: { if: '$assignment.relatedObjectives', then: '$assignment.relatedObjectives', else: '$requirementcontrol.relatedObjectives' } },
                 'requirementcontrol.localLanguage': { $cond: { if: '$assignment.LocalLanguage', then: '$assignment.LocalLanguage', else: '$requirementcontrol.LocalLanguage' } },
                 'requirementcontrol.additionalQOs': { $cond: { if: '$assignment.additionalQOs', then: '$assignment.additionalQOs', else: '' } },
                 'requirementcontrol.additionalQRs': { $cond: { if: '$assignment.additionalQRs', then: '$assignment.additionalQRs', else: '' } },
@@ -1320,102 +1305,25 @@ try {
                 as: 'requirementcontrol.controlOperatorTitleAssignments'
             }
         }, {
-            $addFields: {
-                'objectives':
-                {
-                    $cond: {
-                        if: { $in: ['$abbreviation', autoQoNotReqFirms] },
-                        then: {
-                            $cond: {
-                                if: {
-                                    $not:
-                                    { $or: [{ $eq: ['$requirementcontrol.isQoOverrideEnabled', undefined] }, { $eq: ['$requirementcontrol.isQoOverrideEnabled', ''] }, { $eq: ['$requirementcontrol.isQoOverrideEnabled', null] }] }
-                                },
-                                then: { $ifNull: ['$requirementcontrol.relatedObjectives.uniqueId', []] },
-                                else: {
-                                    $reduce: {
-                                        input: { $ifNull: ['$requirementcontrol.relatedQualityRisks.relatedObjectives', []] },
-                                        initialValue: [],
-                                        in: { $concatArrays: ['$$value', '$$this'] }
-                                    }
-                                }
-                            }
-                        },
-                        else: { $ifNull: ['$requirementcontrol.relatedObjectives.uniqueId', []] },
-                    }
-                }
-            }
-        },
-        {
-            $set: {
-                "objectives": {
-                    $cond: {
-                        if: { $in: ['$abbreviation', autoQoNotReqFirms] },
-                        then: {
-                            $filter: {
-                                input: '$objectives',
-                                as: 'qo',
-                                cond: {
-                                    $not: {
-                                        $in: ['$$qo', reBacPolicyQOIds]
-                                    }
-                                }
-                            }
-                        },
-                        else: '$objectives'
-                    }
-                }
-            }
-        },
-        {
-            $set: {
-                'requirementcontrol.relatedQualityRisks': {
-                    $cond: {
-                        if: { $in: ['$abbreviation', autoQoNotReqFirms] },
-                        then: {
-                            $filter: {
-                                input: {
-                                    $map: {
-                                        input: { $ifNull: ['$requirementcontrol.relatedQualityRisks', []] },
-                                        as: 'qr',
-                                        in: {
-                                            $mergeObjects: [
-                                                '$$qr',
-                                                {
-                                                    relatedObjectives: {
-                                                        $filter: {
-                                                            input: { $ifNull: ['$$qr.relatedObjectives', []] },
-                                                            as: 'objId',
-                                                            cond: {
-                                                                $not: {
-                                                                    $in: ['$$objId', reBacPolicyQOIds]
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    }
-                                },
-                                as: 'filteredQr',
-                                cond: {
-                                    $gt: [{ $size: '$$filteredQr.relatedObjectives' }, 0]
-                                }
-                            }
-                        },
-                        else: '$requirementcontrol.relatedQualityRisks'
-                    }
-                }
-            }
-        },
-        {
             $lookup: {
                 from: 'documentation',
                 let: {
                     fiscalYearOfFirm: '$fiscalYear',
-                    relatedObjectives: '$objectives',
-
+                    relatedQualityRiskObjectives: {
+                        $reduce: {
+                            input: '$requirementcontrol.relatedQualityRisks.relatedObjectives',
+                            initialValue: [],
+                            in: { $concatArrays: ['$$value', '$$this'] }
+                        }
+                    },
+                    isQoOverrideEnabled: { 
+                        $cond: { if: { $not: 
+                         { $or: [{ $eq: ['$requirementcontrol.isQoOverrideEnabled', undefined] },{ $eq: ['$requirementcontrol.isQoOverrideEnabled', ''] },{ $eq: ['$requirementcontrol.isQoOverrideEnabled', null] }]}},
+                          then: true,
+                          else: false}
+                    },
+                    relatedObjectives: '$requirementcontrol.relatedObjectives',
+                    
                 },
                 pipeline: [{
                     $match: {
@@ -1425,7 +1333,7 @@ try {
                                     $eq: ["$fiscalYear", '$$fiscalYearOfFirm']
                                 },
                                 {
-                                    $in: ['$uniqueId', '$$relatedObjectives']
+                                    $in: ['$uniqueId', { $cond: { if: "$$isQoOverrideEnabled", then:'$$relatedObjectives', else: "$$relatedQualityRiskObjectives"}}]
                                 }
                             ]
                         }
@@ -4911,40 +4819,13 @@ try {
 
                 var eventUnreject = existingControl && db.event.find({ publisher: kc.EntityId, actor: kc.Ref_UniqueId, fiscalYear: kc.EntityFiscalYear, message: 'ActionType_ManualUnreject', modifiedOn: { $gt: existingControl.ArcherPublishedOn } }).sort({ 'modifiedOn': -1 }).limit(1).toArray();
                 var isControlUnReject = existingControl && eventUnreject.length > 0;
-
-                var qoUpdatedEvent = null;
-                if (existingControl && autoQoNotReqFirms.includes(kc.EntityId)) {
-                    var current_QOs = kc.qualityObjectiveUniqueIdArray;
-                    var existing_QOs = existingControl.qualityObjectiveUniqueIdArray;
-
-                    var differenceInQOs = [
-                        ...current_QOs.filter(qo => !existing_QOs.includes(qo)),
-                        ...existing_QOs.filter(qo => !current_QOs.includes(qo))
-                    ]
-                    if (differenceInQOs.length > 0) {
-                        var isQOUpdated = db.event.find({
-                            fiscalYear: kc.EntityFiscalYear,
-                            actor: { $in: differenceInQOs }, actorType: 'QualityObjective',
-                            message: { $in: ['ActionType_Delete', 'ActionType_Add'] },
-                            modifiedOn: { $gt: existingControl.ArcherPublishedOn },
-                            eventType: 'EventType_EXC_GLOBAL_LOC',
-                        }).sort({ 'modifiedOn': -1 }).limit(1).toArray();
-                        if (isQOUpdated.length > 0) {
-                            qoUpdatedEvent = isQOUpdated[0];
-                        }
-                    }
-                }
                 if (!(existingControl)) {
                     var getNewEventDate = db.event.find({ publisher: kc.EntityId, actor: kc.Ref_UniqueId, fiscalYear: kc.EntityFiscalYear, message: 'ActionType_Add' }).sort({ 'modifiedOn': -1 }).limit(1).toArray();
 
                     db.sqmarcherkeycontrol.updateOne({ _id: kc._id }, { $set: { EventType: 'New', EventAction: 'Update', LastPublishedRecordStatus: 'Active', EventDate: getNewEventDate.length > 0 ? getNewEventDate[0].modifiedOn : '' } });
                 }
                 else if (isControlUnReject) {
-                    var eventDate = eventUnreject[0].modifiedOn;
-                    if (qoUpdatedEvent && new Date(qoUpdatedEvent.modifiedOn) > new Date(eventDate)) {
-                        eventDate = qoUpdatedEvent.modifiedOn;
-                    }
-                    db.sqmarcherkeycontrol.updateOne({ _id: kc._id }, { $set: { EventType: 'Unrejected', EventAction: 'Update', LastPublishedRecordStatus: 'Active', EventDate: eventDate } });
+                    db.sqmarcherkeycontrol.updateOne({ _id: kc._id }, { $set: { EventType: 'Unrejected', EventAction: 'Update', LastPublishedRecordStatus: 'Active', EventDate: eventUnreject[0].modifiedOn } });
                 }
                 else if (isControlUpdate) {
                     var eventName = existingControl.EventType === 'Rejected' ? 'Unrejected' : 'Updated';
@@ -4999,10 +4880,6 @@ try {
                             })
                                 .sort({ 'modifiedOn': -1 }).limit(1).toArray();
 
-                            //Find the updates in the Quality-Objective
-                            if (qoUpdatedEvent) {
-                                isUpdateFromOutside.push(qoUpdatedEvent);
-                            }                           
                             // Find Updates in Control Owner/Operator Titles
                             var current_ControlOperatorTitleIDs = kc.ControlOperatorTitleIDs ? kc.ControlOperatorTitleIDs.split(';') : [];
                             var existing_ControlOperatorTitleIDs = existingControl.ControlOperatorTitleIDs ? existingControl.ControlOperatorTitleIDs.split(';') : [];

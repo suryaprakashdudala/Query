@@ -1,6 +1,6 @@
 // Config for debugging
-var TARGET_ENTITY_ID = ["AME"]; 
-var TARGET_REF_UNIQUE_ID = "RC-NTW-412"; 
+var TARGET_ENTITY_ID = ["USA"]; 
+var TARGET_REF_UNIQUE_ID = "RC-NTW-141"; 
 
 // --- STEP 1: INITIALIZE ENVIRONMENT ---
 var fiscalYearFilter = [2026];
@@ -202,13 +202,14 @@ db.firm.aggregate([
     {
         $project: {
             _id: 0,
-            EntityId: '$abbreviation',
-            Ref_UniqueId: '$assignment.uniqueId',
-            isQoOverrideEnabled_raw: '$assignment.isQoOverrideEnabled',
-            is_USA: { $in: ['$abbreviation', autoQoNotReqFirms] },
+            // EntityId: '$abbreviation',
+            // Ref_UniqueId: '$assignment.uniqueId',
+            // isQoOverrideEnabled_raw: '$assignment.isQoOverrideEnabled',
+            // is_USA: { $in: ['$abbreviation', autoQoNotReqFirms] },
             objectives_stage_1_content: '$objectives_stage_1_content',
             objectives_after_filter: '$objectives',
             associatedQualityObjectives: '$associatedQualityObjectives',
+            relatedQualityRisks: '$requirementcontrol.relatedQualityRisks',
             QualityObjectiveUniquesIds: {
                 $reduce: {
                     input: '$associatedQualityObjectives',
@@ -222,70 +223,3 @@ db.firm.aggregate([
 ]);
 
 print("Debug results written.");
-
-// --- STEP 3: EXPORT RAW DATA FOR REVIEW ---
-db.firm.aggregate([
-    {
-        $match: {
-            abbreviation: { $in: TARGET_ENTITY_ID },
-            fiscalYear: { $in: fiscalYearFilter }
-        }
-    },
-    {
-        $lookup: {
-            from: 'documentation',
-            let: { firmId: '$abbreviation', fiscalYearOfFirm: '$fiscalYear' },
-            pipeline: [
-                {
-                    $match: {
-                        $expr: {
-                            $and: [
-                                { $eq: ['$type', 'RequirementControlAssignment'] },
-                                { $eq: ['$firmId', '$$firmId'] },
-                                { $eq: ['$fiscalYear', '$$fiscalYearOfFirm'] },
-                                { $eq: ['$uniqueId', TARGET_REF_UNIQUE_ID] }
-                            ]
-                        }
-                    }
-                }
-            ],
-            as: 'assignment'
-        }
-    },
-    { $unwind: '$assignment' },
-    {
-        $lookup: {
-            from: 'documentation',
-            let: {
-                reqCtrlId: '$assignment.requirementControlId',
-                fiscalYearOfFirm: '$fiscalYear'
-            },
-            pipeline: [
-                {
-                    $match: {
-                        $expr: {
-                            $and: [
-                                { $eq: ['$type', 'RequirementControl'] },
-                                { $eq: [{ $toString: '$_id' }, '$$reqCtrlId'] },
-                                { $eq: ['$fiscalYear', '$$fiscalYearOfFirm'] }
-                            ]
-                        }
-                    }
-                }
-            ],
-            as: 'requirementcontrol'
-        }
-    },
-    { $unwind: '$requirementcontrol' },
-    {
-        $project: {
-            _id: 0,
-            EntityId: '$abbreviation',
-            assignment: '$assignment',
-            requirementcontrol: '$requirementcontrol'
-        }
-    },
-    { $out: 'temp_debug_requirement_control' }
-]);
-
-print("Raw debug data exported to 'temp_debug_requirement_control'.");
