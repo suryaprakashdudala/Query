@@ -34,9 +34,19 @@ try {
             $addFields: {
                 fiscalYear: {
                     $cond: {
-                        if: { $in: [getNextRec.fiscalYear + 1, "$fiscalYear"] },
+                        if: {
+                            $and: [
+                                { $isArray: "$fiscalYear" },
+                                { $in: [getNextRec.fiscalYear + 1, "$fiscalYear"] }
+                            ]
+                        },
                         then: "$fiscalYear",
-                        else: { $concatArrays: ["$fiscalYear", [getNextRec.fiscalYear + 1]] }
+                        else: {
+                            $concatArrays: [
+                                { $cond: { if: { $isArray: "$fiscalYear" }, then: "$fiscalYear", else: [] } },
+                                [getNextRec.fiscalYear + 1]
+                            ]
+                        }
                     }
                 }
             }
@@ -85,9 +95,19 @@ try {
             $addFields: {
                 fiscalYear: {
                     $cond: {
-                        if: { $in: [getNextRec.fiscalYear + 1, "$fiscalYear"] },
+                        if: {
+                            $and: [
+                                { $isArray: "$fiscalYear" },
+                                { $in: [getNextRec.fiscalYear + 1, "$fiscalYear"] }
+                            ]
+                        },
                         then: "$fiscalYear",
-                        else: { $concatArrays: ["$fiscalYear", [getNextRec.fiscalYear + 1]] }
+                        else: {
+                            $concatArrays: [
+                                { $cond: { if: { $isArray: "$fiscalYear" }, then: "$fiscalYear", else: [] } },
+                                [getNextRec.fiscalYear + 1]
+                            ]
+                        }
                     }
                 }
             }
@@ -98,9 +118,19 @@ try {
             $addFields: {
                 fiscalYear: {
                     $cond: {
-                        if: { $in: [getNextRec.fiscalYear + 1, "$fiscalYear"] },
+                        if: {
+                            $and: [
+                                { $isArray: "$fiscalYear" },
+                                { $in: [getNextRec.fiscalYear + 1, "$fiscalYear"] }
+                            ]
+                        },
                         then: "$fiscalYear",
-                        else: { $concatArrays: ["$fiscalYear", [getNextRec.fiscalYear + 1]] }
+                        else: {
+                            $concatArrays: [
+                                { $cond: { if: { $isArray: "$fiscalYear" }, then: "$fiscalYear", else: [] } },
+                                [getNextRec.fiscalYear + 1]
+                            ]
+                        }
                     }
                 }
             }
@@ -111,9 +141,19 @@ try {
             $addFields: {
                 fiscalYear: {
                     $cond: {
-                        if: { $in: [getNextRec.fiscalYear + 1, "$fiscalYear"] },
+                        if: {
+                            $and: [
+                                { $isArray: "$fiscalYear" },
+                                { $in: [getNextRec.fiscalYear + 1, "$fiscalYear"] }
+                            ]
+                        },
                         then: "$fiscalYear",
-                        else: { $concatArrays: ["$fiscalYear", [getNextRec.fiscalYear + 1]] }
+                        else: {
+                            $concatArrays: [
+                                { $cond: { if: { $isArray: "$fiscalYear" }, then: "$fiscalYear", else: [] } },
+                                [getNextRec.fiscalYear + 1]
+                            ]
+                        }
                     }
                 }
             }
@@ -124,9 +164,19 @@ try {
             $addFields: {
                 fiscalYear: {
                     $cond: {
-                        if: { $in: [getNextRec.fiscalYear + 1, "$fiscalYear"] },
+                        if: {
+                            $and: [
+                                { $isArray: "$fiscalYear" },
+                                { $in: [getNextRec.fiscalYear + 1, "$fiscalYear"] }
+                            ]
+                        },
                         then: "$fiscalYear",
-                        else: { $concatArrays: ["$fiscalYear", [getNextRec.fiscalYear + 1]] }
+                        else: {
+                            $concatArrays: [
+                                { $cond: { if: { $isArray: "$fiscalYear" }, then: "$fiscalYear", else: [] } },
+                                [getNextRec.fiscalYear + 1]
+                            ]
+                        }
                     }
                 }
             }
