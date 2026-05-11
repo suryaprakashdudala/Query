@@ -110,6 +110,8 @@ if (abbreviation.includes('NTW')){
     db.documenttag.deleteMany({ fiscalYear: { $eq: nextFY } })
     db.enumeration.updateMany({type:{$ne:'FiscalYearType'}},{$pull:{fiscalYear:nextFY}})
     db.enumeration.deleteOne({type:'FiscalYearType',_id:nextFY})
+    db.enumeration.deleteMany({ type: 'RoleType', _id: { $regex: `_${nextFY}$` } })
+    db.accesscontrol.deleteMany({ roleId: { $regex: `_${nextFY}$` } })
     db.keycontrolresource.updateMany({},{$pull:{fiscalYear:nextFY}})
     db.country.updateMany({},{$pull:{fiscalYear:nextFY}})
     db.resourcetype.updateMany({},{$pull:{fiscalYear:nextFY}})
