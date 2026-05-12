@@ -1,6 +1,18 @@
 try {
-    
-	const  getNextRec = db.firm.findOne({abbreviation:'NTW',fiscalYear:2026});
+    // db = db.getSiblingDB('isqc');
+    //   function formatTimestamp(timestamp) {
+    //       var year = timestamp.getFullYear();
+    //       var month = timestamp.getMonth() + 1;
+    //       var day = timestamp.getDate();
+    //       var hour = timestamp.getHours() > 12 ? timestamp.getHours()-12: timestamp.getHours();
+    //       var minute = timestamp.getMinutes();
+    //       var second = timestamp.getSeconds();
+    //       var amOrPm = timestamp.getHours() >= 12 ? "PM" : "AM";
+    //       return `${month}/${day}/${year} ${hour}:${minute}:${second} ${amOrPm}`;
+    //  }
+	// print('RF started the batch ......... ',formatTimestamp(new Date()));
+
+	db.firm.find({abbreviation:'NTW', fiscalYear:2026}).forEach(function (getNextRec) {
     db.log.insertOne({ message: 'Rollforward initiated - Abbreviation ' + getNextRec.abbreviation + ' FiscalYear : ' + getNextRec.fiscalYear + ' RollforwardIntiatedBy : ' + getNextRec.rollForwardByEmail + ' RollforwardIntiatedOn : ' + getNextRec.rollForwardDate, text: new Date().toISOString() });
     db.firm.updateOne({ _id: getNextRec._id }, { $set: { rollForwardStatus: 'RollForward_Executing' } });
     print('Rollforward is in progress for ....... ', getNextRec._id, getNextRec.abbreviation, new Date().toISOString());
@@ -12,23 +24,7 @@ try {
             }
         }, {
             $addFields: {
-                fiscalYear: {
-                    $cond: {
-                        if: {
-                            $and: [
-                                { $isArray: "$fiscalYear" },
-                                { $in: [getNextRec.fiscalYear + 1, "$fiscalYear"] }
-                            ]
-                        },
-                        then: "$fiscalYear",
-                        else: {
-                            $concatArrays: [
-                                { $cond: { if: { $isArray: "$fiscalYear" }, then: "$fiscalYear", else: [] } },
-                                [getNextRec.fiscalYear + 1]
-                            ]
-                        }
-                    }
-                }
+                fiscalYear: { $concatArrays: ['$fiscalYear', [{ $add: [{ $max: '$fiscalYear' }, 1] }]] },
             }
         }]).forEach(function (obj) {
             db.enumeration.updateOne({ _id: obj._id }, { $set: { fiscalYear: obj.fiscalYear } })
@@ -37,128 +33,30 @@ try {
         if (db.enumeration.find({ _id: getNextRec.fiscalYear + 1, type: 'FiscalYearType' }).count() === 0) {
             db.enumeration.insertOne({ _id: getNextRec.fiscalYear + 1, type: 'FiscalYearType', fiscalYear: null, order: db.enumeration.find({ type: 'FiscalYearType' }).sort({ order: -1 }).limit(1).toArray()[0].order + 1, isRetired: false });
         }
-
-        // Add ACLS for the next fiscal year
-        db.accesscontrol.find({ roleId: { $regex: `_${getNextRec.fiscalYear}$` } }).forEach(function (rta) {
-            var prevYear = getNextRec.fiscalYear.toString();
-            var currentYear = (getNextRec.fiscalYear + 1).toString();
-            var newRoleId = rta.roleId.replace(prevYear, currentYear);
-            var newUri = rta.uri.replace(prevYear, currentYear);
-
-            if (db.accesscontrol.find({ roleId: newRoleId, uri: newUri }).count() === 0) {
-                db.accesscontrol.insertOne({
-                    permission: rta.permission,
-                    roleId: newRoleId,
-                    uri: newUri,
-                    order: db.accesscontrol.find().sort({ 'order': -1 }).limit(1).toArray()[0].order + 1
-                });
-            }
-        });
-
-        // Add Enumeration RoleType for the next fiscal year
-        db.enumeration.find({ type: 'RoleType', _id: { $regex: `_${getNextRec.fiscalYear}$` }, isRetired: false }).forEach(function (rta) {
-            var prevYear = getNextRec.fiscalYear.toString();
-            var currentYear = (getNextRec.fiscalYear + 1).toString();
-            var newId = rta._id.replace(prevYear, currentYear);
-
-            if (db.enumeration.find({ _id: newId }).count() === 0) {
-                db.enumeration.insertOne({
-                    _id: newId,
-                    type: rta.type,
-                    isRetired: rta.isRetired,
-                    fiscalYear: rta.fiscalYear ? rta.fiscalYear.concat([getNextRec.fiscalYear + 1]) : [getNextRec.fiscalYear + 1],
-                    order: db.enumeration.find({ type: 'RoleType' }).sort({ order: -1 }).limit(1).toArray()[0].order + 1
-                });
-            }
-        });
         db.country.aggregate([{
             $addFields: {
-                fiscalYear: {
-                    $cond: {
-                        if: {
-                            $and: [
-                                { $isArray: "$fiscalYear" },
-                                { $in: [getNextRec.fiscalYear + 1, "$fiscalYear"] }
-                            ]
-                        },
-                        then: "$fiscalYear",
-                        else: {
-                            $concatArrays: [
-                                { $cond: { if: { $isArray: "$fiscalYear" }, then: "$fiscalYear", else: [] } },
-                                [getNextRec.fiscalYear + 1]
-                            ]
-                        }
-                    }
-                }
+                fiscalYear: { $concatArrays: ['$fiscalYear', [{ $add: [{ $max: '$fiscalYear' }, 1] }]] },
             }
         }]).forEach(function (obj) {
             db.country.updateOne({ _id: obj._id }, { $set: { fiscalYear: obj.fiscalYear } })
         });
         db.keycontrolresource.aggregate([{
             $addFields: {
-                fiscalYear: {
-                    $cond: {
-                        if: {
-                            $and: [
-                                { $isArray: "$fiscalYear" },
-                                { $in: [getNextRec.fiscalYear + 1, "$fiscalYear"] }
-                            ]
-                        },
-                        then: "$fiscalYear",
-                        else: {
-                            $concatArrays: [
-                                { $cond: { if: { $isArray: "$fiscalYear" }, then: "$fiscalYear", else: [] } },
-                                [getNextRec.fiscalYear + 1]
-                            ]
-                        }
-                    }
-                }
+                fiscalYear: { $concatArrays: ['$fiscalYear', [{ $add: [{ $max: '$fiscalYear' }, 1] }]] },
             }
         }]).forEach(function (obj) {
             db.keycontrolresource.updateOne({ _id: obj._id }, { $set: { fiscalYear: obj.fiscalYear } })
         });
         db.resourcetype.aggregate([{
             $addFields: {
-                fiscalYear: {
-                    $cond: {
-                        if: {
-                            $and: [
-                                { $isArray: "$fiscalYear" },
-                                { $in: [getNextRec.fiscalYear + 1, "$fiscalYear"] }
-                            ]
-                        },
-                        then: "$fiscalYear",
-                        else: {
-                            $concatArrays: [
-                                { $cond: { if: { $isArray: "$fiscalYear" }, then: "$fiscalYear", else: [] } },
-                                [getNextRec.fiscalYear + 1]
-                            ]
-                        }
-                    }
-                }
+                fiscalYear: { $concatArrays: ['$fiscalYear', [{ $add: [{ $max: '$fiscalYear' }, 1] }]] },
             }
         }]).forEach(function (obj) {
             db.resourcetype.updateOne({ _id: obj._id }, { $set: { fiscalYear: obj.fiscalYear } })
         });
         db.component.aggregate([{
             $addFields: {
-                fiscalYear: {
-                    $cond: {
-                        if: {
-                            $and: [
-                                { $isArray: "$fiscalYear" },
-                                { $in: [getNextRec.fiscalYear + 1, "$fiscalYear"] }
-                            ]
-                        },
-                        then: "$fiscalYear",
-                        else: {
-                            $concatArrays: [
-                                { $cond: { if: { $isArray: "$fiscalYear" }, then: "$fiscalYear", else: [] } },
-                                [getNextRec.fiscalYear + 1]
-                            ]
-                        }
-                    }
-                }
+                fiscalYear: { $concatArrays: ['$fiscalYear', [{ $add: [{ $max: '$fiscalYear' }, 1] }]] },
             }
         }]).forEach(function (obj) {
             db.component.updateOne({ _id: obj._id }, { $set: { fiscalYear: obj.fiscalYear } })
@@ -2476,7 +2374,8 @@ throw (error);
     }
     db.log.insertOne({ message: 'Rollforward Completed - Abbreviation ' + getNextRec.abbreviation + ' FiscalYear : ' + getNextRec.fiscalYear + ' RollforwardIntiatedBy : ' + getNextRec.rollForwardByEmail + ' RollforwardIntiatedOn : ' + getNextRec.rollForwardDate, text: new Date().toISOString() });
     print('Rollforward completed for ....... ', getNextRec._id, getNextRec.abbreviation, new Date().toISOString());
-
+});
+// print('RF batch executed ......... ',formatTimestamp(new Date()));
 }
 catch (error) {
     // db.log.insertOne({ message: 'Rollforward Failed - Abbreviation ' + getNextRec.abbreviation + ' FiscalYear : ' + getNextRec.fiscalYear + ' RollforwardIntiatedBy : ' + getNextRec.rollForwardByEmail + ' RollforwardIntiatedOn : ' + getNextRec.rollForwardDate + ' ERROR : ' + error.toString(), text: new Date().toISOString() });
