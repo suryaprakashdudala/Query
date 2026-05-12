@@ -1,17 +1,5 @@
 try {
-    // db = db.getSiblingDB('isqc');
-    //   function formatTimestamp(timestamp) {
-    //       var year = timestamp.getFullYear();
-    //       var month = timestamp.getMonth() + 1;
-    //       var day = timestamp.getDate();
-    //       var hour = timestamp.getHours() > 12 ? timestamp.getHours()-12: timestamp.getHours();
-    //       var minute = timestamp.getMinutes();
-    //       var second = timestamp.getSeconds();
-    //       var amOrPm = timestamp.getHours() >= 12 ? "PM" : "AM";
-    //       return `${month}/${day}/${year} ${hour}:${minute}:${second} ${amOrPm}`;
-    //  }
-	// print('RF started the batch ......... ',formatTimestamp(new Date()));
-
+   
 	db.firm.find({abbreviation:'NTW', fiscalYear:2026}).forEach(function (getNextRec) {
     db.log.insertOne({ message: 'Rollforward initiated - Abbreviation ' + getNextRec.abbreviation + ' FiscalYear : ' + getNextRec.fiscalYear + ' RollforwardIntiatedBy : ' + getNextRec.rollForwardByEmail + ' RollforwardIntiatedOn : ' + getNextRec.rollForwardDate, text: new Date().toISOString() });
     db.firm.updateOne({ _id: getNextRec._id }, { $set: { rollForwardStatus: 'RollForward_Executing' } });
@@ -60,6 +48,48 @@ try {
             }
         }]).forEach(function (obj) {
             db.component.updateOne({ _id: obj._id }, { $set: { fiscalYear: obj.fiscalYear } })
+        });
+
+        // ACLs and RoleType migration for Network
+        var prevYear = getNextRec.fiscalYear;
+        var nextYear = getNextRec.fiscalYear + 1;
+        var prevYearStr = prevYear.toString();
+        var nextYearStr = nextYear.toString();
+
+        print('Rollforwarding accesscontrol entries for NTW from ' + prevYear + ' to ' + nextYear + ' ....... ', new Date().toISOString());
+        db.accesscontrol.find({roleId: {$regex:`.*_${prevYearStr}`}}).forEach(function (rta) {
+            var newRoleId = rta.roleId.replace("_" + prevYearStr, "_" + nextYearStr);
+            var newUri = rta.uri.split(prevYearStr).join(nextYearStr);
+
+            if (db.accesscontrol.find({ roleId: newRoleId, uri: newUri }).count() === 0) {
+                var latestAcl = db.accesscontrol.find().sort({ order: -1 }).limit(1).toArray()[0];
+                var nextOrder = (latestAcl ? latestAcl.order : 0) + 1;
+
+                db.accesscontrol.insertOne({
+                    permission: rta.permission,
+                    roleId: newRoleId,
+                    uri: newUri,
+                    order: nextOrder
+                });
+            }
+        });
+
+        print('Rollforwarding RoleType enumeration entries for NTW from ' + prevYear + ' to ' + nextYear + ' ....... ', new Date().toISOString());
+        var latestAclForEnum = db.accesscontrol.find().sort({ order: -1 }).limit(1).toArray()[0];
+        var enumNextOrder = (latestAclForEnum ? latestAclForEnum.order : 0) + 1;
+
+        db.enumeration.find({type:'RoleType',_id: {$regex:`.*_${prevYearStr}`}, isRetired:false}).forEach(function (rta) {
+            var newEnumId = rta._id.replace("_" + prevYearStr, "_" + nextYearStr);
+
+            if (db.enumeration.find({ _id: newEnumId }).count() === 0) {
+                db.enumeration.insertOne({
+                    _id: newEnumId,
+                    type: rta.type,
+                    isRetired: rta.isRetired,
+                    fiscalYear: rta.fiscalYear,
+                    order: enumNextOrder
+                });
+            }
         });
        
         //Firm hierarchy roll-forward
@@ -320,45 +350,7 @@ try {
             ]
         );
     }
-    //Recreation of Baseline Title if deleted from FY24
-    // try {
-    //     db.title.aggregate([
-    //         {
-    //             $match: {
-    //                 fiscalYear: { $eq: getNextRec.fiscalYear },
-    //                 global: true
-    //             }
-    //         }]).forEach(function (f) {
-    //             if (db.title.find({ prevId: f._id.toString().replace(/ObjectId\("(.*)"\)/, "$1") }).count() < 1) {
-    //                 db.title.aggregate([{
-    //                     $match: {
-    //                         _id: f._id
-    //                     }
-    //                 }, {
-    //                     $addFields: {
-    //                         fiscalYear: { $add: ['$fiscalYear', 1] },
-    //                         prevId: { $toString: '$_id' },
-    //                         createdBy:'SYSTEM_ROLLFORWARD',
-    //                         createdOn:new Date().toISOString(),
-    //                         modifiedBy:'SYSTEM_ROLLFORWARD',
-    //                         modifiedOn:new Date().toISOString()
-    //                     }
-    //                 }, {
-    //                     $project: {
-    //                         _id: 0,
-    //                         id: 0
-    //                     }
-
-    //                 }]).forEach(function (z) {
-    //                     db.title.insertOne(z);
-    //                 });
-    //             }
-    //         })
-    // } catch (error) {
-    //     print("SYSTEM:RollForward-Error :: Error at Recreation of baseline title ",error);
-    //     throw (error);
-    // }
-    //Custom title roll-forward
+    
     try {
         db.title.aggregate([{
             $match: {
@@ -602,38 +594,13 @@ try {
         }]).forEach(function (f) {
             db.documentation.insertOne(f);
         });
-        // rfObjectives = db.documentation.aggregate([
-        //     {
-        //         $match: {
-        //             fiscalYear: { $eq: getNextRec.fiscalYear + 1 },
-        //             type: 'QualityObjective'
-        //         }
-        //     },
-        //     {
-        //         $group: {
-        //             _id: "$type",
-        //             uniqueIds: {
-        //                 $push: {
-        //                     $reduce: {
-        //                         input: ['$uniqueId'],
-        //                         initialValue: '',
-        //                         in: { $concat: ["$$value", "$$this"] }
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }]).toArray();
-        // if (rfObjectives[0] !== undefined) {
-        //     rfObjectives = rfObjectives[0].uniqueIds;
-        // }
+        
     } catch (error) {
         print("SYSTEM:RollForward-Error :: Error at Quality Objective ",error);
         throw (error);
     }
     // QR roll-forward
     try {
-        //var rfQualityRisk = [];
-        //rolledForwardEntitiesForBkcAssignments.forEach(re => {
         db.documentation.aggregate([{
             $match: {
                 firmId: { $eq: getNextRec.abbreviation },
@@ -700,31 +667,7 @@ try {
                 db.documentation.insertOne(f);
             }
         });
-        // rfQualityRisk = db.documentation.aggregate([
-        //     {
-        //         $match: {
-        //             fiscalYear: { $eq: getNextRec.fiscalYear + 1 },
-        //             type: 'QualityRisk'
-        //         }
-        //     },
-        //     {
-        //         $group: {
-        //             _id: "$type",
-        //             uniqueIds: {
-        //                 $push: {
-        //                     $reduce: {
-        //                         input: ['$uniqueId'],
-        //                         initialValue: '',
-        //                         in: { $concat: ["$$value", "$$this"] }
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }]).toArray();
-        // if (rfQualityRisk[0] !== undefined) {
-        //     rfQualityRisk = rfQualityRisk[0].uniqueIds;
-        // }
-        //});
+        
     } catch (error) {
         print("SYSTEM:RollForward-Error :: Error at Quality Risk ",error);
         throw (error);
@@ -796,31 +739,7 @@ try {
                 db.documentation.insertOne(f);
             }
         });
-        // rfSubrisk = db.documentation.aggregate([
-        //     {
-        //         $match: {
-        //             fiscalYear: { $eq: getNextRec.fiscalYear + 1 },
-        //             type: 'SubRisk'
-        //         }
-        //     },
-        //     {
-        //         $group: {
-        //             _id: "$type",
-        //             uniqueIds: {
-        //                 $push: {
-        //                     $reduce: {
-        //                         input: ['$uniqueId'],
-        //                         initialValue: '',
-        //                         in: { $concat: ["$$value", "$$this"] }
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }]).toArray();
-        // if (rfSubrisk[0] !== undefined) {
-        //     rfSubrisk = rfSubrisk[0].uniqueIds;
-        // }
-        //});
+        
     } catch (error) {
         print("SYSTEM:RollForward-Error :: Error at Quality Sub Risk ",error);
         throw (error);
@@ -980,38 +899,7 @@ try {
                 db.documentation.insertOne(f);
             }
         });
-        // rfResources = db.documentation.aggregate([
-        //     {
-        //         $match: {
-        //             fiscalYear: { $eq: (getNextRec.fiscalYear) + 1 },
-        //             type: 'Resource'
-        //         }
-        //     },
-        //     {
-        //         $addFields: {
-        //             id: { $toString: '$_id' }
-        //         }
-        //     },
-        //     {
-        //         $group: {
-        //             _id: "$type",
-        //             uniqueIds: {
-        //                 $push: {
-        //                     $reduce: {
-        //                         input: ['$id'],
-        //                         initialValue: '',
-        //                         in: { $concat: ["$$value", "$$this"] }
-        //                     }
-        //                 }
-        //             }
-        //         }
-        //     }]).toArray();
-        // if (rfResources.length > 0) {
-        //     if (rfResources[0] !== undefined) {
-        //         rfResources = rfResources[0].uniqueIds;
-        //     }
-        // }
-        //});
+        
     } catch (error) {
         print("SYSTEM:RollForward-Error:: Error at Resources ",error);
         throw (error);
@@ -1743,19 +1631,6 @@ throw (error);
                     }
                 })
                 f.mitigatedResources = mitiRes;
-                // f.addInformationExecutionControls.forEach(function (r) {
-                //     ipeSys = [];
-                //     r.ipeSystems.length && r.ipeSystems.forEach(function (qr) {
-                //         if (rfResources.includes(qr)) {
-                //             ipeSys.push(qr);
-                //         }
-                //     });
-                //     r.ipeSystems = ipeSys;
-                // });
-
-                // for draft rf rej controls, the designer modified changes are pulled but still we see a pending review until user with admin/edit access opens atleast once.
-                // instead, setting the modified and accepted attributes conditionally will remove the pending review status and no user intervention is not required
-                // fixing in rf script is more suitable as we are setting the fields into db the code will work without any changes
                 var rcPresent = Array.isArray(f.requirementControlPresentInRFyear) && f.requirementControlPresentInRFyear.length > 0
                     ? f.requirementControlPresentInRFyear[0]
                     : null;
@@ -2324,49 +2199,6 @@ throw (error);
     }]).forEach(function (f) {
         db.firm.updateOne({ abbreviation: f.abbreviation, fiscalYear: f.fiscalYear }, { $set: { isRollForwardedFromPreFY: true, modifiedBy:'SYSTEM_ROLLFORWARD', modifiedOn:new Date().toISOString() } })
     });
-    
-    //rollforward Entity which created after network RollForward
-    //rolledForwardEntitiesForBkcAssignments.forEach(re => {
-   /* if (db.firm.find({ abbreviation: { $eq: getNextRec.abbreviation }, fiscalYear: getNextRec.fiscalYear + 1 }).count() == 0) {
-        db.firm.aggregate([
-            {
-                $match: {
-                    $expr: {
-                        $and: [
-                            { $or: [{ $eq: ['$abbreviation', getNextRec.abbreviation] }, { $eq: ['$firmGroupId', getNextRec.abbreviation] }] },
-                            { $eq: ['$fiscalYear', getNextRec.fiscalYear] }
-                        ]
-                    }
-                }
-            },
-            {
-                $addFields: {
-                    fiscalYear: { $add: ['$fiscalYear', 1] },
-                    prevId: { $toString: '$_id' },
-                    isRollForwardTriggered: false,
-                    isRollFwdComplete: false,
-                    rollForwardDate: '',
-                    rollForwardStatus: '',
-                    rollForwardByEmail: '',
-                    rollForwardByDisplayName: '',
-                    isRollForwardedFromPreFY: true,
-                    createdBy:'SYSTEM_ROLLFORWARD',
-                    createdOn:new Date().toISOString(),
-                    modifiedBy:'SYSTEM_ROLLFORWARD',
-                    modifiedOn:new Date().toISOString()
-                }
-            }, {
-                $project: {
-                    _id: 0,
-                    id: 0,
-                    ipeSystems: 0
-                }
-            }
-        ]).forEach(function (f) {
-            db.firm.insertOne(f);
-        })
-    }  */
-    //});
     
     db.firm.updateOne({ _id: getNextRec._id }, { $set: { isRollFwdComplete: true, rollForwardStatus: 'RollForward_Complete', modifiedBy: 'SYSTEM_ROLLFORWARD', modifiedOn: new Date().toISOString() } });
     if (getNextRec.isPartOfRestructure === undefined || !getNextRec.isPartOfRestructure) {
