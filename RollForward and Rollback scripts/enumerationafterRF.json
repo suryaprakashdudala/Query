@@ -1,0 +1,967 @@
+[{
+  "_id": "FilterType_Simple",
+  "order": 1,
+  "type": "FilterType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "LanguageType_es",
+  "name": "Spanish",
+  "order": 6.0,
+  "languageCode": "es",
+  "type": "LanguageType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "DesignEvaluationType_Effective",
+  "order": 1,
+  "type": "DesignEvaluationType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_Network_2023",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 24
+},
+{
+  "_id": "Roles_ControlOperator",
+  "order": 5.0,
+  "type": "Roles",
+  "name": "Control Operator",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_Edit_2023",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 15
+},
+{
+  "_id": "AreaNetworkType_Network",
+  "order": 2,
+  "type": "AreaNetworkType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "ResponsiveToType_LocalRegulator",
+  "order": 2,
+  "type": "ResponsiveToType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "LanguageType_fr",
+  "name": "French",
+  "order": 1.0,
+  "languageCode": "fr",
+  "type": "LanguageType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "ResourceCategory_A",
+  "order": 1.0,
+  "type": "ResourceCategory",
+  "name": "Category A",
+  "isRetired": false,
+  "fiscalYear": [2023.0, 2024.0]
+},
+{
+  "_id": "ConfigurationType_Function",
+  "order": 1.0,
+  "type": "ConfigurationType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "CountryNetworkType_Country",
+  "order": 1,
+  "type": "CountryNetworkType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "Roles_ControlOwner",
+  "order": 1.0,
+  "type": "Roles",
+  "name": "Control Owner",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "Service_No",
+  "order": 1.0,
+  "type": "Service",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "CustomObjectType_Local",
+  "order": 2.0,
+  "type": "CustomObjectType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "KeyProcessRiskAssessmentType_Moderate",
+  "order": 2,
+  "type": "KeyProcessRiskAssessmentType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "KeyProcessRiskAssessmentType_Low",
+  "order": 1,
+  "type": "KeyProcessRiskAssessmentType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_Admin_2025",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 14
+},
+{
+  "_id": "Service_Yes",
+  "order": 1.0,
+  "type": "Service",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "Category_PCAOB",
+  "order": 30,
+  "categoryType": "EntityType_PCAOB",
+  "isRetired": false,
+  "fiscalYear": [2026, 2028, 2027]
+},
+{
+  "_id": "EntityType_Network",
+  "order": 1.0,
+  "type": "EntityType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "ServiceCategory_C",
+  "fiscalYear": [2023, 2024, 2025],
+  "isRetired": false,
+  "name": "Category C",
+  "order": 3.0,
+  "type": "ServiceCategory"
+},
+{
+  "_id": "CustomFieldType_Text",
+  "order": 1.0,
+  "type": "CustomFieldType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "No",
+  "order": 3599,
+  "type": "BooleanStatus",
+  "isRetired": false,
+  "fiscalYear": [2026, 2028, 2027]
+},
+{
+  "_id": "FilterType_Search",
+  "order": 6,
+  "type": "FilterType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_Bkcc_2023",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 27
+},
+{
+  "_id": "RoleType_GlobalAdmin_2026",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 3597
+},
+{
+  "_id": "RoleType_ReadOnly_2025",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 20
+},
+{
+  "_id": "FilterType_Saved",
+  "order": 5,
+  "type": "FilterType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_Admin_2023",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 12
+},
+{
+  "_id": "CustomFieldType_Date",
+  "order": 2.0,
+  "type": "CustomFieldType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "EntityType_BusinessUnit",
+  "type": "EntityType",
+  "order": 4,
+  "fiscalYear": [2026, 2028, 2027],
+  "isRetired": false
+},
+{
+  "_id": "IsGroupType_Yes",
+  "order": 1,
+  "type": "IsGroupType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "TestingType_No",
+  "order": 2,
+  "type": "TestingType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "ConfigurationDataType_Date",
+  "order": 2.0,
+  "type": "ConfigurationDataType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "FilterType_Advance",
+  "order": 2,
+  "type": "FilterType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "ResourceCategory_C",
+  "order": 3.0,
+  "type": "ResourceCategory",
+  "name": "Category C",
+  "isRetired": false,
+  "fiscalYear": [2023.0, 2024.0]
+},
+{
+  "_id": "RoleType_ReadOnly",
+  "order": 4,
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "LanguageType_ko",
+  "name": "Korean",
+  "order": 3.0,
+  "languageCode": "ko",
+  "type": "LanguageType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "Roles_MemberFirmProfile",
+  "order": 4.0,
+  "type": "Roles",
+  "name": "SQM Leadership",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "LanguageType_ja",
+  "name": "Japanese",
+  "order": 2.0,
+  "languageCode": "ja",
+  "type": "LanguageType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "LikelihoodType_Low",
+  "order": 1,
+  "type": "LikelihoodType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "TestingType_Yes",
+  "order": 1,
+  "type": "TestingType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "ConfigurationDataType_Text",
+  "order": 1.0,
+  "type": "ConfigurationDataType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "ResourceCategory_inScope",
+  "order": 4.0,
+  "type": "ResourceCategory",
+  "name": "In scope for ITGCs",
+  "isRetired": false,
+  "fiscalYear": [2025, 2026, 2028, 2027]
+},
+{
+  "_id": "LikelihoodType_High",
+  "order": 2,
+  "type": "LikelihoodType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "EntityType_SubCluster",
+  "order": 6,
+  "type": "EntityType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "StatusType_Reviewed",
+  "order": 12.0,
+  "type": "StatusType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_Edit_2024",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 16
+},
+{
+  "_id": "LanguageType_pt",
+  "name": "Portuguese",
+  "order": 4.0,
+  "languageCode": "pt",
+  "type": "LanguageType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "FilterControlType_Date",
+  "order": 2,
+  "type": "FilterControlType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_ReadOnly_2024",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 19
+},
+{
+  "_id": "RoleType_Network_2025",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 26
+},
+{
+  "_id": "ServiceCategory_out_Of_Scope",
+  "order": 5,
+  "type": "ServiceCategory",
+  "name": "Out of Scope",
+  "isRetired": false,
+  "fiscalYear": [2026, 2028, 2027]
+},
+{
+  "_id": "IsPartOfGroupType_No",
+  "order": 2,
+  "type": "IsPartOfGroupType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "IsPartOfGroupType_Yes",
+  "order": 1,
+  "type": "IsPartOfGroupType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_Edit",
+  "order": 3,
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_GlobalAdmin_2023",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 21
+},
+{
+  "_id": "FunctionType_Technology",
+  "order": 2.0,
+  "type": "Function",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_GlobalAdmin_2025",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 23
+},
+{
+  "_id": "LanguageType_zh-Hans",
+  "name": "Simplified Chinese",
+  "order": 5.0,
+  "languageCode": "zh-Hans",
+  "type": "LanguageType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "ResourceCategory_out_Of_Scope",
+  "order": 5.0,
+  "type": "ResourceCategory",
+  "name": "Out of scope for ITGCs",
+  "isRetired": false,
+  "fiscalYear": [2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_Regulator",
+  "order": 7.0,
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_Bkcc_2026",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 3597
+},
+{
+  "_id": "RoleType_Edit_2026",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 3597
+},
+{
+  "_id": "Category_NonPCAOB",
+  "order": 31,
+  "categoryType": "EntityType_NonPCAOB",
+  "isRetired": false,
+  "fiscalYear": [2026, 2028, 2027]
+},
+{
+  "_id": "FilterControlType_Dropdown",
+  "order": 3,
+  "type": "FilterControlType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_Admin",
+  "order": 2,
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "FilterControlType_Text",
+  "order": 1,
+  "type": "FilterControlType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": 2024.0,
+  "isRetired": false,
+  "order": 2.0,
+  "type": "FiscalYearType",
+  "fiscalYear": [2027]
+},
+{
+  "_id": "CustomObjectType_Global",
+  "order": 1.0,
+  "type": "CustomObjectType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "ResponsiveToType_ISQC1",
+  "order": 1,
+  "type": "ResponsiveToType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_GlobalAdmin",
+  "order": 1,
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "AreaNetworkType_Area",
+  "order": 1,
+  "type": "AreaNetworkType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "ActionType_AutomaticReject",
+  "order": 2.0,
+  "type": "ActionType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "DesignEvaluationType_Ineffective",
+  "order": 2,
+  "type": "DesignEvaluationType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "EntityType_Cluster",
+  "order": 5,
+  "type": "EntityType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_Regulator_2025",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 11.0
+},
+{
+  "_id": "ServiceCategory_A",
+  "fiscalYear": [2023, 2024, 2025],
+  "isRetired": false,
+  "name": "Category A",
+  "order": 1.0,
+  "type": "ServiceCategory"
+},
+{
+  "_id": "RoleType_Admin_2026",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 3597
+},
+{
+  "_id": "ResourceCategory_B",
+  "order": 2.0,
+  "type": "ResourceCategory",
+  "name": "Category B",
+  "isRetired": false,
+  "fiscalYear": [2023.0, 2024.0]
+},
+{
+  "_id": "RoleType_Admin_2024",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 13
+},
+{
+  "_id": "ImpactType_Low",
+  "order": 1,
+  "type": "ImpactType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "FunctionType_Business",
+  "order": 1.0,
+  "type": "Function",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "ServiceCategory_B",
+  "fiscalYear": [2023, 2024, 2025],
+  "isRetired": false,
+  "name": "Category B",
+  "order": 2.0,
+  "type": "ServiceCategory"
+},
+{
+  "_id": "RoleType_Regulator_2026",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 3597
+},
+{
+  "_id": "ConfigurationDataType_List",
+  "order": 3.0,
+  "type": "ConfigurationDataType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "ImpactType_High",
+  "order": 2,
+  "type": "ImpactType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": 2026,
+  "type": "FiscalYearType",
+  "fiscalYear": [2027],
+  "order": 4,
+  "isRetired": false
+},
+{
+  "_id": "Yes",
+  "order": 3598,
+  "type": "BooleanStatus",
+  "isRetired": false,
+  "fiscalYear": [2026, 2028, 2027]
+},
+{
+  "_id": 2023.0,
+  "isRetired": false,
+  "order": 1.0,
+  "type": "FiscalYearType",
+  "fiscalYear": [2027]
+},
+{
+  "_id": "RoleType_Bkcc_2024",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 28
+},
+{
+  "_id": "CustomFieldType_Dropdown",
+  "order": 4.0,
+  "type": "CustomFieldType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "AssociationType_KeyControl",
+  "order": 1.0,
+  "type": "AssociationType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "EntityType_Area",
+  "order": 2.0,
+  "type": "EntityType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "StatusType_Draft",
+  "order": 1,
+  "type": "StatusType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_Network_2024",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 25
+},
+{
+  "_id": "RoleType_Bkcc_2025",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 29
+},
+{
+  "_id": 2025.0,
+  "type": "FiscalYearType",
+  "fiscalYear": [2027],
+  "order": 3.0,
+  "isRetired": false
+},
+{
+  "_id": "RoleType_Regulator_2024",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 10.0
+},
+{
+  "_id": "OperatingEvaluationType_Ineffective",
+  "order": 2,
+  "type": "OperatingEvaluationType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "KeyProcessRiskAssessmentType_Threatning",
+  "order": 3,
+  "type": "KeyProcessRiskAssessmentType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_Edit_2025",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 17
+},
+{
+  "_id": "ActionType_ManualReject",
+  "order": 1.0,
+  "type": "ActionType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_ReadOnly_2026",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 3597
+},
+{
+  "_id": "RoleType_Network_2026",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 3597
+},
+{
+  "_id": "Roles_FunctionOwner",
+  "order": 3.0,
+  "type": "Roles",
+  "name": "Function Owner",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "FilterType_Quicklink",
+  "order": 3,
+  "type": "FilterType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "ServiceCategory_inScope",
+  "order": 4,
+  "type": "ServiceCategory",
+  "name": "In Scope",
+  "isRetired": false,
+  "fiscalYear": [2026, 2028, 2027]
+},
+{
+  "_id": "ActionType_UnReject",
+  "order": 3,
+  "type": "ActionType",
+  "isRetired": false,
+  "fiscalYear": [2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_Network",
+  "order": 4,
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "IsGroupType_No",
+  "order": 2,
+  "type": "IsGroupType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "CountryNetworkType_Network",
+  "order": 2,
+  "type": "CountryNetworkType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "EntityType_Region",
+  "order": 3,
+  "type": "EntityType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "CustomFieldType_Radio",
+  "order": 5.0,
+  "type": "CustomFieldType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "FilterType_Predefined",
+  "order": 4,
+  "type": "FilterType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "KeyProcessRiskAssessmentType_Critical",
+  "order": 4,
+  "type": "KeyProcessRiskAssessmentType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "EntityType_MemberFirm",
+  "order": 8,
+  "type": "EntityType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "OperatingEvaluationType_Effective",
+  "order": 1,
+  "type": "OperatingEvaluationType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_GlobalAdmin_2024",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 22
+},
+{
+  "_id": "RoleType_ReadOnly_2023",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 18
+},
+{
+  "_id": "Roles_ProcessOwner",
+  "order": 2.0,
+  "type": "Roles",
+  "name": "Process Owner",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "LanguageType_zh-Hant",
+  "name": "Traditional Chinese",
+  "order": 7.0,
+  "languageCode": "zh-Hant",
+  "type": "LanguageType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "EntityType_Group",
+  "order": 7,
+  "type": "EntityType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_Bkcc",
+  "order": 5.0,
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027]
+},
+{
+  "_id": "RoleType_Regulator_2023",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027],
+  "order": 8.0
+},
+{
+  "_id": 2027,
+  "type": "FiscalYearType",
+  "fiscalYear": null,
+  "order": 5,
+  "isRetired": false
+},
+{
+  "_id": "RoleType_Admin_2027",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027, 2027],
+  "order": 3598
+},
+{
+  "_id": "RoleType_Bkcc_2027",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027, 2027],
+  "order": 3599
+},
+{
+  "_id": "RoleType_Edit_2027",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027, 2027],
+  "order": 3600
+},
+{
+  "_id": "RoleType_GlobalAdmin_2027",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027, 2027],
+  "order": 3601
+},
+{
+  "_id": "RoleType_Network_2027",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027, 2027],
+  "order": 3602
+},
+{
+  "_id": "RoleType_ReadOnly_2027",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027, 2027],
+  "order": 3603
+},
+{
+  "_id": "RoleType_Regulator_2027",
+  "type": "RoleType",
+  "isRetired": false,
+  "fiscalYear": [2023, 2024, 2025, 2026, 2028, 2027, 2027],
+  "order": 3604
+}]

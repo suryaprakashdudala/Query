@@ -1,26 +1,6 @@
 try {
-    db = db.getSiblingDB('isqc');
-      function formatTimestamp(timestamp) {
-          var year = timestamp.getFullYear();
-          var month = timestamp.getMonth() + 1;
-          var day = timestamp.getDate();
-          var hour = timestamp.getHours() > 12 ? timestamp.getHours()-12: timestamp.getHours();
-          var minute = timestamp.getMinutes();
-          var second = timestamp.getSeconds();
-          var amOrPm = timestamp.getHours() >= 12 ? "PM" : "AM";
-          return `${month}/${day}/${year} ${hour}:${minute}:${second} ${amOrPm}`;
-     }
-	print('RF started the batch ......... ',formatTimestamp(new Date()));
-
-	db.firm.aggregate([
-            {
-                $match: {
-                    isRollForwardTriggered: true,
-                    isRollFwdComplete : false,
-                    rollForwardStatus : 'RollForward_Inprogress'
-                }
-            }
-    ]).forEach(function (getNextRec) {
+    
+	const  getNextRec = db.firm.findOne({abbreviation:'NTW',fiscalYear:2026});
     db.log.insertOne({ message: 'Rollforward initiated - Abbreviation ' + getNextRec.abbreviation + ' FiscalYear : ' + getNextRec.fiscalYear + ' RollforwardIntiatedBy : ' + getNextRec.rollForwardByEmail + ' RollforwardIntiatedOn : ' + getNextRec.rollForwardDate, text: new Date().toISOString() });
     db.firm.updateOne({ _id: getNextRec._id }, { $set: { rollForwardStatus: 'RollForward_Executing' } });
     print('Rollforward is in progress for ....... ', getNextRec._id, getNextRec.abbreviation, new Date().toISOString());
@@ -2496,11 +2476,10 @@ throw (error);
     }
     db.log.insertOne({ message: 'Rollforward Completed - Abbreviation ' + getNextRec.abbreviation + ' FiscalYear : ' + getNextRec.fiscalYear + ' RollforwardIntiatedBy : ' + getNextRec.rollForwardByEmail + ' RollforwardIntiatedOn : ' + getNextRec.rollForwardDate, text: new Date().toISOString() });
     print('Rollforward completed for ....... ', getNextRec._id, getNextRec.abbreviation, new Date().toISOString());
-});
-print('RF batch executed ......... ',formatTimestamp(new Date()));
+
 }
 catch (error) {
-    db.log.insertOne({ message: 'Rollforward Failed - Abbreviation ' + getNextRec.abbreviation + ' FiscalYear : ' + getNextRec.fiscalYear + ' RollforwardIntiatedBy : ' + getNextRec.rollForwardByEmail + ' RollforwardIntiatedOn : ' + getNextRec.rollForwardDate + ' ERROR : ' + error.toString(), text: new Date().toISOString() });
+    // db.log.insertOne({ message: 'Rollforward Failed - Abbreviation ' + getNextRec.abbreviation + ' FiscalYear : ' + getNextRec.fiscalYear + ' RollforwardIntiatedBy : ' + getNextRec.rollForwardByEmail + ' RollforwardIntiatedOn : ' + getNextRec.rollForwardDate + ' ERROR : ' + error.toString(), text: new Date().toISOString() });
     //db.firm.updateOne({_id:processingData._id},{$set:{"errorResponse":error.toString(),rollForwardStatus:'Rollforward_Failed'}});
     print("SYSTEM:RollForward-Error - The RollForward errored with following issue ................., ERROR :: ", error.toString());
 }
